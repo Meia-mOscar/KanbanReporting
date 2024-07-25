@@ -1,0 +1,71 @@
+/**Remove bloat data
+ * Match developer; SUM "Est. Time"; Conditions[{Completed }{""}{current month}]
+ * Delete lines not matching these conditions
+ *
+*/
+
+var sheetname = "Copy";
+var columnName = "Completed At";
+var indexOfColumn = -1;
+const date = new Date(2024, 06, 30); //Measured in miliseconds
+
+function findCoumnIndex(columnName, indexOfColumn) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if(!sheet) {
+    Logger.log("Sheet not found");
+    return;
+  }
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const columnIndex = headers.indexOf(columnName);
+  if(columnIndex === -1) {
+    Logger.log("Heading not found");
+    return;
+  }
+}
+
+function removeExcess(sheetName, indexOfColumn, blank, date) {
+  let sum = 0;
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const data = sheet.getDataRange().getValues();
+  if(!sheet) {
+    Logger.log("Sheet not found");
+    return;
+  }
+  for(let i=data.length; i>0 ;i--) {
+    const cellValue = data[indexOfColumn][i];
+    //Incomplete || Current month
+    if(cellValue === "" || cellValue === null || cellValue < date) {
+      sheet.deleteRow(i+1);
+    }
+  }
+}
+
+/**Format values
+ * "Dev" => "Developer"
+ * "*@twothreebird.com" => developer_name
+*/
+
+function format() {
+
+}
+
+/**Use a key value pair array; dev{enum dev/String} & int{duration}
+ *
+ *
+ *
+*/
+
+function correctingFactor() {
+
+}
+
+/**Apply correcting factor
+ *
+ *
+ *
+*/
+
+function correctTime() {
+
+}
