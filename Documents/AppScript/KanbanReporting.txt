@@ -1,59 +1,204 @@
 /**Remove bloat data
  * Match developer; SUM "Est. Time"; Conditions[{Completed }{""}{current month}]
- * Delete lines not matching these conditions
- *
+ * Delete lines not matching these conditions 
+ * The active sheet is tab 0
 */
 
-var sheetname = "Copy";
-var columnName = "Completed At";
-var indexOfColumn = -1;
-const date = new Date(2024, 06, 30); //Measured in miliseconds
+let startDate = new Date(2024, 06, 30); //Measured in miliseconds
+let endDate = new Date(2024, 08, 01);
+let sheetName = 'Copy'; //When passing sheetName to removeCompletedAt(), the .getRange() complains
 
-function findCoumnIndex(columnName, indexOfColumn) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  if(!sheet) {
-    Logger.log("Sheet not found");
-    return;
-  }
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const columnIndex = headers.indexOf(columnName);
-  if(columnIndex === -1) {
-    Logger.log("Heading not found");
-    return;
-  }
-}
+const Devs = {
+  CHARLES: 'charles.li@velosure.com.au',
+  CLYDE: 'clyde@twothreebird.com',
+  BJORN: 'bjorn@twothreebird.com',
+  VERNON: 'vernon@twothreebird.com',
+  HITESH: 'hitesh@twothreebird.com',
+  RYAN: 'ryan@twothreebird.com',
+  CURTIS: 'curtis@twothreebird.com',
+  DIRK: 'dirk@twothreebird.com',
+  BRENDAN: 'brendan@twothreebird.com',
+  SERGEI: 'sergei@twothreebird.com',
+  VIJAY: 'vijay@twothreebird.com',
+};
 
-function removeExcess(sheetName, indexOfColumn, blank, date) {
+function removeLastModified() {
   let sum = 0;
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sheet.getDataRange().getValues();
-  if(!sheet) {
-    Logger.log("Sheet not found");
-    return;
+
+  //Does the 'Completed At' exist
+  //function doesColExist(){}
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
+  let value = sheet.getRange("d1").getValue();
+  if(value==='Last Modified') {
+    Logger.log('Found "' + value + '"'); 
+  } else {
+    Logger.log('Did not find. Value is "' + value + '"');
   }
-  for(let i=data.length; i>0 ;i--) {
-    const cellValue = data[indexOfColumn][i];
-    //Incomplete || Current month
-    if(cellValue === "" || cellValue === null || cellValue < date) {
-      sheet.deleteRow(i+1);
+
+  //Validate and remove excess "Last Modified"
+  //function deleteRows(){}
+  let data = sheet.getDataRange().getValues();
+  let cellValue = '';
+  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
+    cellValue = sheet.getRange(noRows, 3).getValue();
+    let cellDate = new Date(cellValue);
+    if(!isNaN(cellDate)) {
+      if(cellDate <= startDate || celldate >= endDate) {
+        //Logger.log('match: ' + cellDate + ' Row: ' + noRows)
+        sheet.deleteRow(noRows);
+      } 
+    } else {
+      //Logger.log('invalid date: ' + noRows);
+      sheet.deleteRow(noRows);
     }
   }
 }
+
+function removeCompletedAt() {
+  let sum = 0;
+
+  //Does the 'Completed At' exist
+  //function doesColExist(){}
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
+  let value = sheet.getRange("c1").getValue();
+  if(value==='Completed At') {
+    //Logger.log('Found "' + value + '"'); 
+  } else {
+    Logger.log('Did not find. Value is "' + value + '"');
+  }
+
+  //Validate and remove excess "Completed At"
+  //function deleteRows(){}
+  let data = sheet.getDataRange().getValues();
+  let cellValue = '';
+  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
+    cellValue = sheet.getRange(noRows, 3).getValue();
+    let cellDate = new Date(cellValue);
+    if(!isNaN(cellDate)) {
+      if(cellDate <= startDate || celldate >= endDate) {
+        //Logger.log('match: ' + cellDate + ' Row: ' + noRows)
+        sheet.deleteRow(noRows);
+      } 
+    } else {
+      //Logger.log('invalid date: ' + noRows);
+      sheet.deleteRow(noRows);
+    }
+  }
+}
+
 
 /**Format values
  * "Dev" => "Developer"
  * "*@twothreebird.com" => developer_name
 */
 
-function format() {
+function formatDev() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
+  if(!sheet) {
+    Logger.log('Sheet not found: ' + sheetName)
+  }
 
+  let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  let devColIndex = -1;
+  for(let i=0; i<headerRow.length; i++) {
+    if(headerRow[i] === 'Dev') {
+      Logger.log('devColIndex: '+ (i+1));
+      devColIndex = i+1;
+    }
+  }
+
+  //Format developer names
+  let data = sheet.getDataRange().getValues();
+  let cellValue = '';
+  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
+    cellValue = sheet.getRange(noRows, devColIndex).getValue();
+    switch (cellValue) {
+      case Devs.BJORN:
+        sheet.getRange(noRows,devColIndex).setValue('Björn Theart');
+        break;
+      case Devs.CHARLES:
+        sheet.getRange(noRows,devColIndex).setValue('Charles Li');
+        break;
+      case Devs.CLYDE:
+        sheet.getRange(noRows,devColIndex).setValue('Clyde Cyster');
+        break;
+      case Devs.VERNON:
+        sheet.getRange(noRows,devColIndex).setValue('Vernon Grant');
+        break;
+      case Devs.HITESH:
+        sheet.getRange(noRows,devColIndex).setValue('Hitesh Maity');
+        break;
+      case Devs.RYAN:
+        sheet.getRange(noRows,devColIndex).setValue('Ryan Peel');
+        break;
+      case Devs.BRENDAN:
+        sheet.getRange(noRows,devColIndex).setValue('Brendan van der Meulen');
+        break;
+      case Devs.CURTIS:
+        sheet.getRange(noRows,devColIndex).setValue('Curtis Page');
+        break;
+      case Devs.DIRK:
+        sheet.getRange(noRows,devColIndex).setValue('Dirk Dircksen');
+        break;
+      case Devs.SERGEI:
+        sheet.getRange(noRows,devColIndex).setValue('Sergei Pringiers');
+        break;
+      case Devs.VIJAY:
+        sheet.getRange(noRows,devColIndex).setValue('Vijay Kumar');
+        break;
+    }
+  }
 }
 
+function separateDev() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
+  if(!sheet) {
+    Logger.log('Sheet not found: ' + sheetName)
+  }
+
+  let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  let devColIndex = -1;
+  let estTimeColIndex = -1;
+  let brandColIndex = -1;
+  let regionColIndex = -1;
+  let nameColIndex = -1;
+  for(let i=0; i<headerRow.length; i++) {
+    if(headerRow[i] === 'Dev') {
+      Logger.log('devColIndex: '+ (i+1));
+      devColIndex = i+1;
+    } else if(headerRow[i] === 'Estimated time') {
+      Logger.log('Estimated time: ' + (i+1));
+      estTimeColIndex = i+1;
+    } else if(headerRow[i] === 'Brand') {
+      Logger.log('Brand' + (i+1));
+      brandColIndex = i+1;
+    } else if(headerRow[i] === 'region') {
+      Logger.log('Region' + (i+1));
+      regionColIndex = i+1;
+    } else if(headerRow[i] === 'Name') {
+      Logger.log('Name: ' + (i+1));
+      nameColIndex = i+1;
+    }
+  }
+
+  //Format developer names
+  let cellValue = '';
+  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
+    cellValue = sheet.getRange(noRows,devColIndex).getValue();
+    if(cellValue.includes(',')) {
+      Logger.log('comma: ' + noRows + ' devs: ' + cellValue.split(',').length);
+      let splitDevs = cellValue.split(','); //Return the number of devs, not commas.
+      for(let i=0; i<cellValue.split(',').length-1; i++) {
+        sheet.insertRowAfter(noRows);
+        sheet.getRange(noRows+1,devColIndex).setValue(splitDevs[i]).trimWhitespace();
+      }
+    }
+  }
+}
 /**Use a key value pair array; dev{enum dev/String} & int{duration}
- *
- *
- *
+ * 
+ * 
+ * 
 */
 
 function correctingFactor() {
@@ -61,9 +206,9 @@ function correctingFactor() {
 }
 
 /**Apply correcting factor
- *
- *
- *
+ * 
+ * 
+ * 
 */
 
 function correctTime() {
