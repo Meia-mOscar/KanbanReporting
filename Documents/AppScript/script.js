@@ -8,8 +8,11 @@ let startDate = new Date(2024, 06, 30); //Measured in miliseconds
 let endDate = new Date(2024, 08, 01);
 const sheetName = 'Copy';
 
+//In stead of enum, do key value pairs bruh
+//Use maps - https://www.w3schools.com/js/js_maps.asp
+//Hold onto enums to configure items? No, this can be done in the map.
 const Devs = {
-  CHARLES: 'charles.li@velosure.com.au',
+  CHARLES: 'charles.li@velosure.com.au', //and add a value 'Charles Li'
   CLYDE: 'clyde@twothreebird.com',
   BJORN: 'bjorn@twothreebird.com',
   VERNON: 'vernon@twothreebird.com',
@@ -39,6 +42,24 @@ const Headers = {
   STDTIME: 'Standardised time',
   COST: 'Cost'
 }
+
+let HeadersIndex = {
+  CREATED_INDEX: -1,
+  COMPLETED_INDEX: -1,
+  MODIFIED_INDEX: -1,
+  NAME_INDEX: -1,
+  PROGRESS_INDEX: -1,
+  BRAND_INDEX: -1,
+  DEVELOPER_INDEX: -1,
+  CATEGORY_INDEX: -1,
+  REGION_INDEX: -1,
+  ESTTIME_INDEX: -1,
+  ROLLTIME_INDEX: -1,
+  STDTIME_INDEX: -1,
+  COST_INDEX: -1
+}
+
+//function setHeaderKeyValuePairs() {}
 
 function removeLastModified() {
   let sum = 0;
@@ -103,6 +124,8 @@ function removeCompletedAt() {
     }
   }
 }
+
+//function removeZeroHrs() {}
 
 function separateDev() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
@@ -221,7 +244,7 @@ function formatDev() {
   }
 }
 
-function formatTime() {
+function differenceCalc() {
   //add col and do math
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if(!sheet) {
@@ -239,23 +262,21 @@ function formatTime() {
     cellValue = sheet.getRange(1,i).getValue();
     if(cellValue == Headers.ESTTIME) {
       estIndex = i;
-      Logger.log('est time: ' + estIndex + 'cellValue: ' + cellValue);
+      Logger.log('est time: ' + sheet.getRange(1,i).getA1Notation() + ' cellValue: ' + sheet.getRange(1,i).getValue());
     } else if (cellValue == Headers.ROLLTIME) {
       rollIndex = i;
-      Logger.log('roll time: ' + rollIndex + 'cellValue: ' + cellValue);
+      Logger.log('roll time: ' + sheet.getRange(1,i).getA1Notation() + ' cellValue: ' + sheet.getRange(1,i).getValue());
     }
   }
   //Add column and do match
   sheet.insertColumnAfter(sheet.getLastColumn());
   sheet.getRange(1,sheet.getLastColumn()+1).setValue(Headers.STDTIME);
-  //Difference calc not working
   for(let i=2; i<sheet.getMaxRows(); i++) {
-    sheet.getRange(i,sheet.getLastColumn()).setValue(sheet.getRange(i,estIndex).getValue() - sheet.getRange(i,rollIndex).getValue());
+    let estA1 = sheet.getRange(i,estIndex).getA1Notation();
+    let rollA1 = sheet.getRange(i,rollIndex).getA1Notation();
+    let difference = '=('+estA1+'-'+rollA1+')';
+    sheet.getRange(i,sheet.getLastColumn()).setFormula(difference);
   }
-}
-
-function cost() {
-  //dur*24*580
 }
 
 function correctingFactor() {
@@ -271,4 +292,8 @@ function correctingFactor() {
 
 function correctTime() {
 
+}
+
+function cost() {
+  //dur*24*580
 }
