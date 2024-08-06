@@ -89,14 +89,18 @@ let HeadersIndex = new Map([
   ['Cost', -1]
 ]);
 
-//function setHeaderKeyValuePairs() {}
+function headerIndexing() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+
+  headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+}
 
 function removeLastModified() {
   let sum = 0;
 
   //Does the 'Completed At' exist
   //function doesColExist(){}
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   let value = sheet.getRange("d1").getValue();
   if(value==='Last Modified') {
     Logger.log('Found "' + value + '"'); 
@@ -205,7 +209,7 @@ function separateDev() {
       let brandTemp = sheet.getRange(noRows,brandColIndex).getValue();
       let regionTemp = sheet.getRange(noRows,regionColIndex).getValue();
       let nameTemp = sheet.getRange(noRows, nameColIndex).getValue();
-      let techCatTemp = sheet.getRange(noRows, nameColIndex).getValue();
+      let techCatTemp = sheet.getRange(noRows, techCatIndex).getValue();
       for(let i=0; i<cellValue.split(',').length-1; i++) {
         sheet.insertRowAfter(noRows);
         sheet.getRange(noRows+1,devColIndex).setValue(splitDevs[i+1]).trimWhitespace();
@@ -214,7 +218,7 @@ function separateDev() {
         sheet.getRange(noRows+1,brandColIndex).setValue(brandTemp);
         sheet.getRange(noRows+1,rollHrsIndex).setValue(rollHrsTemp);
         sheet.getRange(noRows+1,estTimeColIndex).setValue(estTimeTemp);
-        sheet.getRange(noRows+1,techCatIndex).setValue(techCatIndex);
+        sheet.getRange(noRows+1,techCatIndex).setValue(techCatTemp);
       }
       sheet.getRange(noRows,devColIndex).setValue(splitDevs[0]);
     }
