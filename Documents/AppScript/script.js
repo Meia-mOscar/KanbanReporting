@@ -10,6 +10,7 @@ const sheetName = 'Copy';
 
 //In stead of enum, Use maps - https://www.w3schools.com/js/js_maps.asp
 //Map email to fullName
+//Maybe use both, allowing enum (Dev.CHARLES which contains his email) to be mapped to String (Charles Li)
 const Developers = new Map([
   ['charles.li@velosure.com.au', 'Charles Li'],
   ['bjorn@twothreebird.com', 'Björn Theart'],
@@ -55,7 +56,7 @@ let correctingFactor = new Map([
 //In stead of enum, Use maps - https://www.w3schools.com/js/js_maps.asp
 //Map headerName to index
 //Not const
-const Headers = {
+const HeaderLabels = {
   CREATED: 'Created At',
   COMPLETED: 'Completed At',
   MODIFIED: 'Last Modified',
@@ -72,27 +73,47 @@ const Headers = {
   COST: 'Cost'
 }
 
-let HeadersIndex = new Map([
-  ['Created At', -1],
-  ['Completed At', -1],
-  ['Last Modified', -1],
-  ['Name', -1],
-  ['Tech Progress', -1],
-  ['Brand', -1],
-  ['Dev', -1],
-  ['Tech Category', -1],
-  ['Region', -1],
-  ['Estimated time', -1],
-  ['Rollover time', -1],
-  ['Standardised time', -1],
-  ['Actual time', -1], //Use actual time for the correcting factored time?
-  ['Cost', -1]
+let HeaderIndex = new Map([
+  [HeaderLabels.CREATED, -1],
+  [HeaderLabels.COMPLETED, -1],
+  [HeaderLabels.MODIFIED, -1],
+  [HeaderLabels.NAME, -1],
+  [HeaderLabels.PROGRESS, -1],
+  [HeaderLabels.BRAND, -1],
+  [HeaderLabels.DEVELOPER, -1],
+  [HeaderLabels.CATEGORY, -1],
+  [HeaderLabels.REGION, -1],
+  [HeaderLabels.ESTTIME, -1],
+  [HeaderLabels.ROLLTIME, -1],
+  [HeaderLabels.STDTIME, -1],
+  [HeaderLabels.ACTUALTIME, -1], //Use actual time for the correcting factored time?
+  [HeaderLabels.COST, -1]
 ]);
 
-function headerIndexing() {
+function setHeaderIndex() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-
   headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  for(let i=0; i<headers.length; i++) {
+    if(headers[i] === HeaderLabels.CREATED) {
+      HeaderIndex.set(HeaderLabels.CREATED, i+1);
+    } else if(headers[i] === HeaderLabels.NAME) {
+      HeaderIndex.set(HeaderLabels.NAME,i+1);
+    } else if(headers[i] === HeaderLabels.ESTTIME) {
+      HeaderIndex.set(HeaderLabels.ESTTIME, i+1);
+    } else if(headers[i] === HeaderLabels.BRAND) {
+      HeaderIndex.set(HeaderLabels.BRAND, i+1);
+    } else if(headers[i] === HeaderLabels.REGION) {
+      HeaderIndex.set(HeaderLabels.REGION,i+1);
+    } else if(headers[i] === HeaderLabels.DEVELOPER) {
+      HeaderIndex.set(HeaderLabels.DEVELOPER,i+1);
+    } else if(headers[i] === HeaderLabels.ROLLTIME) {
+      HeaderIndex.set(HeaderLabels.ROLLTIME,i+1);
+    } else if(headers[i] === HeaderLabels.CATEGORY) {
+      HeaderIndex.set(HeaderLabels.CATEGORY,i+1);
+    } else if(headers[i] === HeaderLabels.ACTUALTIME) {
+      HeaderIndex.set(HeaderLabels.ACTUALTIME,i+1);
+    }
+  }
 }
 
 function removeLastModified() {
