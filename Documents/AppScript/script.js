@@ -1,17 +1,15 @@
-/**Remove bloat data
- * Match developer; SUM "Est. Time"; Conditions[{Completed }{""}{current month}]
- * Delete lines not matching these conditions 
- * The active sheet is tab 0
-*/
 
-let startDate = new Date(2024, 06, 30); //Measured in miliseconds
-let endDate = new Date(2024, 08, 01);
-const sheetName = 'Copy';
+let startOfMonth = new Date();
+let startDate = new Date(2024, 08, 01); //Measured in miliseconds
+let endOfMonth = new Date();
+let endDate = new Date(2024, 08, 31);
+const copySheet = 'Copy';
+const correctingFactorSheet = 'Correcting Factor';
 
 //In stead of enum, Use maps - https://www.w3schools.com/js/js_maps.asp
 //Map email to fullName
 //Maybe use both, allowing enum (Dev.CHARLES which contains his email) to be mapped to String (Charles Li)
-const Devs = {
+const MapToDevEmail = {
   CHARLES: 'charles.li@velosure.com.au', //and add a value 'Charles Li'
   CLYDE: 'clyde@twothreebird.com',
   BJORN: 'bjorn@twothreebird.com',
@@ -25,32 +23,46 @@ const Devs = {
   VIJAY: 'vijay@twothreebird.com',
 };
 
+const MapToDevName = {
+  CHARLES: 'Charles Li', //and add a value 'Charles Li'
+  CLYDE: 'Clyde Cyster',
+  BJORN: 'Björn Theart',
+  VERNON: 'Vernon Grant',
+  HITESH: 'Hitesh Maity',
+  RYAN: 'Ryan Peel',
+  CURTIS: 'Curtis Page',
+  DIRK: 'Dirk Dircksen',
+  BRENDAN: 'Brendan van der Meulen',
+  SERGEI: 'Sergei Pringiers',
+  VIJAY: 'Vijay Kumar',
+}
+
 //Map dev : correcting factor
 //Handle the logic of adding and storing the correcting factor in a function
 let correctingFactor = new Map([
-  [Devs.CHARLES, 1],
-  [Devs.CLYDE, 1],
-  [Devs.BJORN, 1],
-  [Devs.HITESH, 1],
-  [Devs.RYAN, 1],
-  [Devs.CURTIS, 1],
-  [Devs.DIRK, 1],
-  [Devs.DIRK, 1],
-  [Devs.SERGEI, 1],
-  [Devs.VIJAY, 1]
+  [MapToDevEmail.CHARLES, 1],
+  [MapToDevEmail.CLYDE, 1],
+  [MapToDevEmail.BJORN, 1],
+  [MapToDevEmail.HITESH, 1],
+  [MapToDevEmail.RYAN, 1],
+  [MapToDevEmail.CURTIS, 1],
+  [MapToDevEmail.DIRK, 1],
+  [MapToDevEmail.DIRK, 1],
+  [MapToDevEmail.SERGEI, 1],
+  [MapToDevEmail.VIJAY, 1]
 ]);
 
 let devHours = new Map ([
-  [Devs.CHARLES, 0],
-  [Devs.CLYDE, 0],
-  [Devs.BJORN, 0],
-  [Devs.HITESH, 0],
-  [Devs.RYAN, 0],
-  [Devs.CURTIS, 0],
-  [Devs.DIRK, 0],
-  [Devs.DIRK, 0],
-  [Devs.SERGEI, 0],
-  [Devs.VIJAY, 0]
+  [MapToDevName.CHARLES, 0],
+  [MapToDevName.CLYDE, 0],
+  [MapToDevName.BJORN, 0],
+  [MapToDevName.HITESH, 0],
+  [MapToDevName.RYAN, 0],
+  [MapToDevName.CURTIS, 0],
+  [MapToDevName.DIRK, 0],
+  [MapToDevName.DIRK, 0],
+  [MapToDevName.SERGEI, 0],
+  [MapToDevName.VIJAY, 0]
 ])
 
 //In stead of enum, Use maps - https://www.w3schools.com/js/js_maps.asp
@@ -90,8 +102,17 @@ let HeaderIndex = new Map([
   [HeaderLabels.COST, -1]
 ]);
 
+function setDate() {
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0,0,0,0);
+  endOfMonth.setMonth(startOfMonth.getMonth()+1);
+  endOfMonth.setDate(0);
+  endOfMonth.setHours(0,0,0,0);
+  Logger.log(startOfMonth + ' end ' + endOfMonth)
+}
+
 function setHeaderIndex() {
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
   headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   //If some headers are not found, create column
   for(let i=0; i<headers.length; i++) {
@@ -119,7 +140,7 @@ function removeLastModified() {
 
   //Does the 'Completed At' exist
   //function doesColExist(){}
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
   let value = sheet.getRange("d1").getValue();
   if(value==='Last Modified') {
     Logger.log('Found "' + value + '"'); 
@@ -146,14 +167,15 @@ function removeLastModified() {
   }
 }
 
+//Remove hard coded indexing of HeaderLabels.COMPLETED
 function removeCompletedAt() {
   let sum = 0;
 
   //Does the 'Completed At' exist
   //function doesColExist(){}
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
   let value = sheet.getRange("c1").getValue();
-  if(value==='Completed At') {
+  if(value === HeaderLabels.COMPLETED) {
     //Logger.log('Found "' + value + '"'); 
   } else {
     Logger.log('Did not find. Value is "' + value + '"');
@@ -180,48 +202,24 @@ function removeCompletedAt() {
 
 //function removeZeroHrs() {}
 
-function separateDev() {
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
-  if(!sheet) {
-    Logger.log('Sheet not found: ' + sheetName)
-  }
+function separateSharedTasks() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
   //Identify column indexes
+  //setHeaderIndex();
   let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-  let devColIndex = -1;
-  let estTimeColIndex = -1;
-  let rollHrsIndex = -1;
-  let brandColIndex = -1;
-  let regionColIndex = -1;
-  let nameColIndex = -1;
-  let techCatIndex = -1;
-  for(let i=0; i<headerRow.length; i++) {
-    if(headerRow[i] === 'Dev') {
-      Logger.log('devColIndex: '+ (i+1));
-      devColIndex = i+1;
-    } else if(headerRow[i] === 'Estimated time') {
-      Logger.log('Estimated time: ' + (i+1));
-      estTimeColIndex = i+1;
-    } else if(headerRow[i] === 'Brand') {
-      Logger.log('Brand' + (i+1));
-      brandColIndex = i+1;
-    } else if(headerRow[i] === 'Region') {
-      Logger.log('Region' + (i+1));
-      regionColIndex = i+1;
-    } else if(headerRow[i] === 'Name') {
-      Logger.log('Name: ' + (i+1));
-      nameColIndex = i+1;
-    } else if(headerRow[i] === 'Rollover time') {
-      rollHrsIndex = i+1;
-    } else if(headerRow[i] === 'Tech category') {
-      techCatIndex = i+1;
-    }
-  }
+  let devColIndex = HeaderIndex.get(HeaderLabels.DEVELOPER);
+  let estTimeColIndex = HeaderIndex.get(HeaderLabels.ESTTIME);
+  let rollHrsIndex = HeaderIndex.get(HeaderLabels.ROLLTIME);
+  let brandColIndex = HeaderIndex.get(HeaderLabels.BRAND);
+  let regionColIndex = HeaderIndex.get(HeaderLabels.REGION);
+  let nameColIndex = HeaderIndex.get(HeaderLabels.NAME);
+  let techCatIndex = HeaderIndex.get(HeaderLabels.CATEGORY);
+  
   //Separate devs
   let cellValue = '';
   for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
     cellValue = sheet.getRange(noRows,devColIndex).getValue();
     if(cellValue.includes(',')) {
-      Logger.log('comma: ' + noRows + ' devs: ' + cellValue.split(',').length);
       let splitDevs = cellValue.split(','); //Return the number of devs, not commas.
       let estTimeTemp = sheet.getRange(noRows,estTimeColIndex).getValue();
       let rollHrsTemp = sheet.getRange(noRows,rollHrsIndex).getValue();
@@ -229,6 +227,7 @@ function separateDev() {
       let regionTemp = sheet.getRange(noRows,regionColIndex).getValue();
       let nameTemp = sheet.getRange(noRows, nameColIndex).getValue();
       let techCatTemp = sheet.getRange(noRows, techCatIndex).getValue();
+      
       for(let i=0; i<cellValue.split(',').length-1; i++) {
         sheet.insertRowAfter(noRows);
         sheet.getRange(noRows+1,devColIndex).setValue(splitDevs[i+1]).trimWhitespace();
@@ -245,10 +244,7 @@ function separateDev() {
 }
 
 function formatDev() {
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Copy');
-  if(!sheet) {
-    Logger.log('Sheet not found: ' + sheetName)
-  }
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
 
   let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   let devColIndex = -1;
@@ -265,50 +261,47 @@ function formatDev() {
   for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
     cellValue = sheet.getRange(noRows, devColIndex).getValue();
     switch (cellValue) {
-      case Devs.BJORN:
-        sheet.getRange(noRows,devColIndex).setValue('Björn Theart');
+      case MapToDevEmail.BJORN:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.BJORN);
         break;
-      case Devs.CHARLES:
-        sheet.getRange(noRows,devColIndex).setValue('Charles Li');
+      case MapToDevEmail.CHARLES:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.CHARLES);
         break;
-      case Devs.CLYDE:
-        sheet.getRange(noRows,devColIndex).setValue('Clyde Cyster');
+      case MapToDevEmail.CLYDE:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.CLYDE);
         break;
-      case Devs.VERNON:
-        sheet.getRange(noRows,devColIndex).setValue('Vernon Grant');
+      case MapToDevEmail.VERNON:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.VERNON);
         break;
-      case Devs.HITESH:
-        sheet.getRange(noRows,devColIndex).setValue('Hitesh Maity');
+      case MapToDevEmail.HITESH:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.HITESH);
         break;
-      case Devs.RYAN:
-        sheet.getRange(noRows,devColIndex).setValue('Ryan Peel');
+      case MapToDevEmail.RYAN:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.RYAN);
         break;
-      case Devs.BRENDAN:
-        sheet.getRange(noRows,devColIndex).setValue('Brendan van der Meulen');
+      case MapToDevEmail.BRENDAN:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.BRENDAN);
         break;
-      case Devs.CURTIS:
-        sheet.getRange(noRows,devColIndex).setValue('Curtis Page');
+      case MapToDevEmail.CURTIS:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.CURTIS);
         break;
-      case Devs.DIRK:
-        sheet.getRange(noRows,devColIndex).setValue('Dirk Dircksen');
+      case MapToDevEmail.DIRK:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.DIRK);
         break;
-      case Devs.SERGEI:
-        sheet.getRange(noRows,devColIndex).setValue('Sergei Pringiers');
+      case MapToDevEmail.SERGEI:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.SERGEI);
         break;
-      case Devs.VIJAY:
-        sheet.getRange(noRows,devColIndex).setValue('Vijay Kumar');
+      case MapToDevEmail.VIJAY:
+        sheet.getRange(noRows,devColIndex).setValue(MapToDevName.VIJAY);
         break;
     }
   }
 }
 
-function differenceCalc() {
+//Change to set actual time, then create subsequent function for 'standardisedTime which is actual * correctingfactor
+function setStandardisedTime() {
   //add col and do math
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  if(!sheet) {
-    Logger.log('"' + sheetName + '" not found ');
-    return;
-  }
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
 
   //let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   //Find Est time and Rollover time
@@ -319,17 +312,17 @@ function differenceCalc() {
   for(let i=1; i<headerRow.length; i++) {
     cellValue = sheet.getRange(1,i).getValue();
     //Logger.log(sheet.getRange(1,i).getA1Notation());
-    if(cellValue == Headers.ESTTIME) {
+    if(cellValue == HeaderLabels.ESTTIME) {
       estIndex = i;
       Logger.log('est time: ' + sheet.getRange(1,i).getA1Notation() + ' cellValue: ' + sheet.getRange(1,i).getValue());
-    } else if (cellValue == Headers.ROLLTIME) {
+    } else if (cellValue == HeaderLabels.ROLLTIME) {
       rollIndex = i;
       Logger.log('roll time: ' + sheet.getRange(1,i).getA1Notation() + ' cellValue: ' + sheet.getRange(1,i).getValue());
     }
   }
   //Add column and do match
   sheet.insertColumnAfter(sheet.getLastColumn());
-  sheet.getRange(1,sheet.getLastColumn()+1).setValue(Headers.STDTIME);
+  sheet.getRange(1,sheet.getLastColumn()+1).setValue(HeaderLabels.STDTIME);
   for(let i=2; i<=sheet.getMaxRows(); i++) {
     let estA1 = sheet.getRange(i,estIndex).getA1Notation();
     let rollA1 = sheet.getRange(i,rollIndex).getA1Notation();
@@ -338,18 +331,26 @@ function differenceCalc() {
   }
 }
 
-function calcCorrectingFactor() {
+function setCorrectingFactor() {
   //for each dev, sum the formatted hours
   //Compare to the Number of working days in current month?
-  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  let sum = 0;
-  devHours.forEach(function(value, key) {
-    for(let i=0; i<sheet.getLastRow(); i++) {
-      if(1) { //if the dev's name is a match
-        sum += sheet.getRange(i,HeaderIndex.get(HeaderLabels.STDTIME)).getValue();
-      }
-    }
-  })
+  setHeaderIndex();
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
+  let d = sheet.getRange(1,HeaderIndex.get(HeaderLabels.DEVELOPER)).getA1Notation().replace(/[0-9]/g,'');
+  Logger.log('dev index: ' + d);
+  let hrs = sheet.getRange(1,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getA1Notation().replace(/[0-9]/g,'');
+  Logger.log('hrs index: '+hrs);
+  
+  //'=SUMIF(' + d + ':' + d + ',' + MapToDevName.name + ',' + hrs + ':' + hrs + ')'
+  
+  let developerCellNotation;
+  for(let i=2; i<=sheet.getMaxRows(); i++) {
+    developerCellNotation = sheet.getRange(i,HeaderIndex.get(HeaderLabels.DEVELOPER)).getA1Notation();
+    Logger.log(developerCellNotation);
+    let sumIf = '=SUMIF(' + d + ':' + d + ',' + developerCellNotation + ',' + hrs + ':' + hrs + ')';
+    sheet.getRange(i,HeaderIndex.get(HeaderLabels.STDTIME)).setFormula(sumIf);
+  }
+
 }
 
 /**Apply correcting factor
@@ -364,4 +365,11 @@ function correctTime() {
 
 function cost() {
   //dur*24*580
+}
+
+function main() {
+  setHeaderIndex();
+  setDate();
+  removeCompletedAt();
+  removeLastModified();
 }
