@@ -11,19 +11,6 @@ const sheetName = 'Copy';
 //In stead of enum, Use maps - https://www.w3schools.com/js/js_maps.asp
 //Map email to fullName
 //Maybe use both, allowing enum (Dev.CHARLES which contains his email) to be mapped to String (Charles Li)
-const Developers = new Map([
-  ['charles.li@velosure.com.au', 'Charles Li'],
-  ['bjorn@twothreebird.com', 'Björn Theart'],
-  ['vernon@twothreebird.com', 'Vernon Grant'],
-  ['hitesh@twothreebird.com', 'Hitesh Maity'],
-  ['ryan@twothreebird.com', 'Ryan Peel'],
-  ['curtis@twothreebird.com', 'Curtis Page'],
-  ['dirk@twothreebird.com', 'Dirk Dircksen'],
-  ['brendan@twothreebird.com', 'Brendan van der Meulen'],
-  ['sergei@twothreebird.com', 'Sergei Pringiers'],
-  ['vijay@twothreebird.com', 'Vijay Kumar']
-]);
-
 const Devs = {
   CHARLES: 'charles.li@velosure.com.au', //and add a value 'Charles Li'
   CLYDE: 'clyde@twothreebird.com',
@@ -41,17 +28,30 @@ const Devs = {
 //Map dev : correcting factor
 //Handle the logic of adding and storing the correcting factor in a function
 let correctingFactor = new Map([
-  ['Charles Li', 1],
-  ['Björn Theart', 1],
-  ['Vernon Grant', 1],
-  ['Hitesh Maity', 1],
-  ['Ryan Peel', 1],
-  ['Curtis Page', 1],
-  ['Dirk Dircksen', 1],
-  ['Brendan van der Meulen', 1],
-  ['Sergei Pringiers', 1],
-  ['Vijay Kumar', 1]
+  [Devs.CHARLES, 1],
+  [Devs.CLYDE, 1],
+  [Devs.BJORN, 1],
+  [Devs.HITESH, 1],
+  [Devs.RYAN, 1],
+  [Devs.CURTIS, 1],
+  [Devs.DIRK, 1],
+  [Devs.DIRK, 1],
+  [Devs.SERGEI, 1],
+  [Devs.VIJAY, 1]
 ]);
+
+let devHours = new Map ([
+  [Devs.CHARLES, 0],
+  [Devs.CLYDE, 0],
+  [Devs.BJORN, 0],
+  [Devs.HITESH, 0],
+  [Devs.RYAN, 0],
+  [Devs.CURTIS, 0],
+  [Devs.DIRK, 0],
+  [Devs.DIRK, 0],
+  [Devs.SERGEI, 0],
+  [Devs.VIJAY, 0]
+])
 
 //In stead of enum, Use maps - https://www.w3schools.com/js/js_maps.asp
 //Map headerName to index
@@ -71,7 +71,7 @@ const HeaderLabels = {
   STDTIME: 'Standardised time',
   ACTUALTIME: 'Actual time', //Use actual time for the correcting factored time?
   COST: 'Cost'
-}
+};
 
 let HeaderIndex = new Map([
   [HeaderLabels.CREATED, -1],
@@ -93,27 +93,25 @@ let HeaderIndex = new Map([
 function setHeaderIndex() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  //If some headers are not found, create column
   for(let i=0; i<headers.length; i++) {
-    if(headers[i] === HeaderLabels.CREATED) {
-      HeaderIndex.set(HeaderLabels.CREATED, i+1);
-    } else if(headers[i] === HeaderLabels.NAME) {
-      HeaderIndex.set(HeaderLabels.NAME,i+1);
-    } else if(headers[i] === HeaderLabels.ESTTIME) {
-      HeaderIndex.set(HeaderLabels.ESTTIME, i+1);
-    } else if(headers[i] === HeaderLabels.BRAND) {
-      HeaderIndex.set(HeaderLabels.BRAND, i+1);
-    } else if(headers[i] === HeaderLabels.REGION) {
-      HeaderIndex.set(HeaderLabels.REGION,i+1);
-    } else if(headers[i] === HeaderLabels.DEVELOPER) {
-      HeaderIndex.set(HeaderLabels.DEVELOPER,i+1);
-    } else if(headers[i] === HeaderLabels.ROLLTIME) {
-      HeaderIndex.set(HeaderLabels.ROLLTIME,i+1);
-    } else if(headers[i] === HeaderLabels.CATEGORY) {
-      HeaderIndex.set(HeaderLabels.CATEGORY,i+1);
-    } else if(headers[i] === HeaderLabels.ACTUALTIME) {
-      HeaderIndex.set(HeaderLabels.ACTUALTIME,i+1);
-    }
+    HeaderIndex.forEach(function(value, key) {
+      if(headers[i] === key) {
+        HeaderIndex.set(key, i+1);
+      }
+    })
   }
+  
+  HeaderIndex.forEach(function(value,key) {
+    //check if mapped to -1
+    if(value < 0) {
+      if(sheet.getLastColumn() == sheet.getMaxColumns()) {
+        sheet.insertColumnAfter(sheet.getLastColumn());
+      }
+      sheet.getRange(1, sheet.getLastColumn()+1).setValue(key);
+      HeaderIndex.set(key, sheet.getRange(1, sheet.getLastColumn()));
+    }
+  })
 }
 
 function removeLastModified() {
@@ -343,6 +341,15 @@ function differenceCalc() {
 function calcCorrectingFactor() {
   //for each dev, sum the formatted hours
   //Compare to the Number of working days in current month?
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  let sum = 0;
+  devHours.forEach(function(value, key) {
+    for(let i=0; i<sheet.getLastRow(); i++) {
+      if(1) { //if the dev's name is a match
+        sum += sheet.getRange(i,HeaderIndex.get(HeaderLabels.STDTIME)).getValue();
+      }
+    }
+  })
 }
 
 /**Apply correcting factor
