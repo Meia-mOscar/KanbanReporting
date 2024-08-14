@@ -78,10 +78,10 @@ const HeaderLabels = {
   DEVELOPER: 'Dev',
   CATEGORY: 'Tech Category',
   REGION: 'Region',
-  ESTTIME: 'Estimated time',
-  ROLLTIME: 'Rollover time',
-  STDTIME: 'Standardised time',
-  ACTUALTIME: 'Actual time', //Use actual time for the correcting factored time?
+  ESTTIME: 'Estimated time', //Time logged on Asana
+  ROLLTIME: 'Rollover time', //Time spent in previous reporting period
+  ACTUALTIME: 'Actual time', //Est time - Roll time
+  STDTIME: 'Standardised time', //Difference time * correcting factor
   COST: 'Cost'
 };
 
@@ -98,7 +98,7 @@ let HeaderIndex = new Map([
   [HeaderLabels.ESTTIME, -1],
   [HeaderLabels.ROLLTIME, -1],
   [HeaderLabels.STDTIME, -1],
-  [HeaderLabels.ACTUALTIME, -1], //Use actual time for the correcting factored time?
+  [HeaderLabels.ACTUALTIME, -1],
   [HeaderLabels.COST, -1]
 ]);
 
@@ -299,35 +299,16 @@ function formatDev() {
 }
 
 //Change to set actual time, then create subsequent function for 'standardisedTime which is actual * correctingfactor
-function setStandardisedTime() {
+function setActualTime() {
   //add col and do math
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
-
-  //let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-  //Find Est time and Rollover time
-  let cellValue = '';
-  let estIndex = -1;
-  let rollIndex = -1;
-  let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-  for(let i=1; i<headerRow.length; i++) {
-    cellValue = sheet.getRange(1,i).getValue();
-    //Logger.log(sheet.getRange(1,i).getA1Notation());
-    if(cellValue == HeaderLabels.ESTTIME) {
-      estIndex = i;
-      Logger.log('est time: ' + sheet.getRange(1,i).getA1Notation() + ' cellValue: ' + sheet.getRange(1,i).getValue());
-    } else if (cellValue == HeaderLabels.ROLLTIME) {
-      rollIndex = i;
-      Logger.log('roll time: ' + sheet.getRange(1,i).getA1Notation() + ' cellValue: ' + sheet.getRange(1,i).getValue());
-    }
-  }
-  //Add column and do match
-  sheet.insertColumnAfter(sheet.getLastColumn());
-  sheet.getRange(1,sheet.getLastColumn()+1).setValue(HeaderLabels.STDTIME);
+  setHeaderIndex();
   for(let i=2; i<=sheet.getMaxRows(); i++) {
-    let estA1 = sheet.getRange(i,estIndex).getA1Notation();
-    let rollA1 = sheet.getRange(i,rollIndex).getA1Notation();
+    let estA1 = sheet.getRange(i,HeaderIndex.get(HeaderLabels.ESTTIME)).getA1Notation();
+    let rollA1 = sheet.getRange(i,HeaderIndex.get(HeaderLabels.ROLLTIME)).getA1Notation();
     let difference = '=('+estA1+'-'+rollA1+')';
-    sheet.getRange(i,sheet.getLastColumn()).setFormula(difference);
+    //sheet.getRange(i,sheet.getLastColumn()).setFormula(difference);
+    sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).setFormula(difference);
   }
 }
 
@@ -370,6 +351,6 @@ function cost() {
 function main() {
   setHeaderIndex();
   setDate();
-  removeCompletedAt();
-  removeLastModified();
+  separateSharedTasks();
+  formatDev();
 }
