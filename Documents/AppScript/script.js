@@ -3,6 +3,9 @@ let startOfMonth = new Date();
 let startDate = new Date(2024, 08, 01); //Measured in miliseconds
 let endOfMonth = new Date();
 let endDate = new Date(2024, 08, 31);
+const currentdate = new Date();
+const dayOfMonth = new Date().getDate();
+const daysInMonth = new Date(currentdate.getFullYear(), currentdate.getMonth()+1, 0).getDate();
 const copySheet = 'Copy';
 const correctingFactorSheet = 'Correcting Factor';
 
@@ -37,40 +40,13 @@ const MapToDevName = {
   VIJAY: 'Vijay Kumar',
 }
 
-//Map dev : correcting factor
-//Handle the logic of adding and storing the correcting factor in a function
-let correctingFactor = new Map([
-  [MapToDevEmail.CHARLES, 1],
-  [MapToDevEmail.CLYDE, 1],
-  [MapToDevEmail.BJORN, 1],
-  [MapToDevEmail.HITESH, 1],
-  [MapToDevEmail.RYAN, 1],
-  [MapToDevEmail.CURTIS, 1],
-  [MapToDevEmail.DIRK, 1],
-  [MapToDevEmail.DIRK, 1],
-  [MapToDevEmail.SERGEI, 1],
-  [MapToDevEmail.VIJAY, 1]
-]);
-
-let devHours = new Map ([
-  [MapToDevName.CHARLES, 0],
-  [MapToDevName.CLYDE, 0],
-  [MapToDevName.BJORN, 0],
-  [MapToDevName.HITESH, 0],
-  [MapToDevName.RYAN, 0],
-  [MapToDevName.CURTIS, 0],
-  [MapToDevName.DIRK, 0],
-  [MapToDevName.DIRK, 0],
-  [MapToDevName.SERGEI, 0],
-  [MapToDevName.VIJAY, 0]
-])
-
 //In stead of enum, Use maps - https://www.w3schools.com/js/js_maps.asp
 //Map headerName to index
 //Not const
 const HeaderLabels = {
   CREATED: 'Created At',
   COMPLETED: 'Completed At',
+  CORRECTFACTOR: 'Correcting factor',
   MODIFIED: 'Last Modified',
   NAME: 'Name',
   PROGRESS: 'Tech Progress',
@@ -82,12 +58,15 @@ const HeaderLabels = {
   ROLLTIME: 'Rollover time', //Time spent in previous reporting period
   ACTUALTIME: 'Actual time', //Est time - Roll time
   STDTIME: 'Standardised time', //Difference time * correcting factor
+  SUMTIME: 'Summed time', //The sum of Actual time
+  STDHOURS2DATE: 'Hours to date', //The number of standard hours to date
   COST: 'Cost'
 };
 
 let HeaderIndex = new Map([
   [HeaderLabels.CREATED, -1],
   [HeaderLabels.COMPLETED, -1],
+  [HeaderLabels.CORRECTFACTOR, -1],
   [HeaderLabels.MODIFIED, -1],
   [HeaderLabels.NAME, -1],
   [HeaderLabels.PROGRESS, -1],
@@ -97,8 +76,10 @@ let HeaderIndex = new Map([
   [HeaderLabels.REGION, -1],
   [HeaderLabels.ESTTIME, -1],
   [HeaderLabels.ROLLTIME, -1],
-  [HeaderLabels.STDTIME, -1],
   [HeaderLabels.ACTUALTIME, -1],
+  [HeaderLabels.STDTIME, -1],
+  [HeaderLabels.SUMTIME, -1],
+  [HeaderLabels.STDHOURS2DATE, -1],
   [HeaderLabels.COST, -1]
 ]);
 
@@ -108,7 +89,6 @@ function setDate() {
   endOfMonth.setMonth(startOfMonth.getMonth()+1);
   endOfMonth.setDate(0);
   endOfMonth.setHours(0,0,0,0);
-  Logger.log(startOfMonth + ' end ' + endOfMonth)
 }
 
 function setHeaderIndex() {
@@ -312,7 +292,7 @@ function setActualTime() {
   }
 }
 
-function setCorrectingFactor() {
+function setSumOfActualTime() {
   //for each dev, sum the formatted hours
   //Compare to the Number of working days in current month?
   setHeaderIndex();
@@ -329,19 +309,32 @@ function setCorrectingFactor() {
     developerCellNotation = sheet.getRange(i,HeaderIndex.get(HeaderLabels.DEVELOPER)).getA1Notation();
     Logger.log(developerCellNotation);
     let sumIf = '=SUMIF(' + d + ':' + d + ',' + developerCellNotation + ',' + hrs + ':' + hrs + ')';
-    sheet.getRange(i,HeaderIndex.get(HeaderLabels.STDTIME)).setFormula(sumIf);
+    sheet.getRange(i,HeaderIndex.get(HeaderLabels.SUMTIME)).setFormula(sumIf);
   }
 
 }
 
-/**Apply correcting factor
- * 
- * 
- * 
-*/
+function setMonthToDateHours() {
+  setHeaderIndex();
+  //Using ((dayOfMonth / daysInMonth)*168)/24
+  let formula = '=((' + dayOfMonth + '/' + daysInMonth + ')*168/24)'; //HARDCODE ALERT, BOTH FORMULA AND STD HRS
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
+  Logger.log('hierso');
+  for(let i=2; i<=sheet.getMaxRows(); i++) {
+    Logger.log('here');
+    sheet.getRange(i, HeaderIndex.get(HeaderLabels.STDHOURS2DATE)).setFormula(formula);
+  }
+}
 
-function correctTime() {
-
+function setCorrectingfactor() {
+  setHeaderIndex();
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(copySheet);
+  let ithRow = -1;
+  let formula = '=IFS(' + /* I need the A1 notation's here... */HeaderIndex.get(HeaderLabels.SUMTIME) + ithRow + '<' + HeaderIndex.get(HeaderLabels.STDHOURS2DATE) + '';
+  for(let i=0; i<=sheet.getMaxRows(); i++) {
+    //
+    sheet.getRange(i, HeaderIndex.get(HeaderLabels.CORRECTFACTOR)).setFormula(formula);
+  }
 }
 
 function cost() {
