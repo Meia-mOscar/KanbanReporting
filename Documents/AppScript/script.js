@@ -53,8 +53,8 @@ const HeaderLabels = {
   REGION: 'Region',
   ESTTIME: 'Estimated time', //Time logged on Asana
   ROLLTIME: 'Rollover time', //Time spent in previous reporting period
-  DIFFTIME: 'Difference time', //Est time - Roll time
-  ACTUALTIME: 'Actual time', //
+  DIFFTIME: 'Difference time', //NA
+  ACTUALTIME: 'Actual time', //Est time - Roll time
   STDTIME: 'Standardised time', //Difference time * correcting factor
   SUMTIME: 'Summed time', //The sum of Actual time
   MTDHRS: 'Hours to date', //The number of standard hours to date
@@ -115,24 +115,51 @@ function setHeaderIndex() {
 }
 
 function removeLastModified() {
+  /* 
+  Apply filter
+  Sort by last modified
+  Clear contents
+  */
+  setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
+  let range = sheet.getRange(1,1,sheet.getLastRow(),sheet.getLastColumn());
+  range.createFilter();
+  sheet.sort(HeaderIndex.get(HeaderLabels.MODIFIED), false);
+  sheet.getFilter().remove();
+  
+  //So, the if comparison isn't working.
+  let rowIndex = -1;
+  let lastModified = '';
+  for(let i=1; i<sheet.getLastRow(); i++) {
+    lastModified = sheet.getRange(i, HeaderIndex.get(HeaderLabels.MODIFIED)).getValue();
+    if(lastModified < startDate) {
+      Logger.log(i);
+      rowIndex = i;
+      i=sheet.getLastRow();
+    }
+  }
+
+  /*
   let value = sheet.getRange(1, HeaderIndex.get(HeaderLabels.MODIFIED)).getValue();
   //Validate & delete irrelevant rows
   let data = sheet.getDataRange().getValues();
   let cellValue = '';
-  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
-    cellValue = sheet.getRange(noRows, 3).getValue();
+  for(let i = sheet.getMaxRows(); i>0; i--) {
+    cellValue = sheet.getRange(i, 3).getValue();
+    let range = sheet.getRange(i,1,1,sheet.getLastColumn());
     let cellDate = new Date(cellValue);
     if(!isNaN(cellDate)) {
       if(cellDate <= startDate || celldate >= endDate) {
-        //Logger.log('match: ' + cellDate + ' Row: ' + noRows)
-        sheet.deleteRow(noRows);
+        //Logger.log('match: ' + cellDate + ' Row: ' + i)
+        //sheet.deleteRow(i);
+        range.clearContent();
       } 
     } else {
-      //Logger.log('invalid date: ' + noRows);
-      sheet.deleteRow(noRows);
+      //Logger.log('invalid date: ' + i);
+      //sheet.deleteRow(i);
+      range.clearContent();
     }
-  }
+  }*/
 }
 
 //Remove hard coded indexing of HeaderLabels.COMPLETED
@@ -153,12 +180,24 @@ function removeCompletedAt() {
       } 
     } else {
       //Logger.log('invalid date: ' + noRows);
-      sheet.deleteRow(noRows);
+      sheet.clearContents(noRows);
+      //sheet.deleteRow(noRows);
     }
   }
 }
 
-//function removeZeroHrs() {}
+function removeZeroHrs() {
+  //If actual hrs is zero, delete the row
+  setHeaderIndex();
+  setActualTime();
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
+  for(let i=sheet.getMaxRows(); i>1; i--) {
+    let range = sheet.getRange(i,1,1,sheet.getLastColumn());
+    if(sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getValue() == 0 || sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getValue() == isNaN) {
+      range.clearContent();
+    }
+  }
+}
 
 function separateSharedTasks() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
@@ -252,7 +291,7 @@ function setActualTime() {
 function setSumOfActualTime() {
   //for each dev, sum the formatted hours
   //Compare to the Number of working days in current month?
-  //setHeaderIndex();
+  setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   let d = sheet.getRange(1,HeaderIndex.get(HeaderLabels.DEVELOPER)).getA1Notation().replace(/[0-9]/g,'');
   let hrs = sheet.getRange(1,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getA1Notation().replace(/[0-9]/g,'');
@@ -298,11 +337,11 @@ function setCorrectingfactor() {
 
 function setStandardisedHours() {
   //correctingFactor * actualHours
-  setHeaderIndex();
+  //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   for(let i=2; i<=sheet.getMaxRows(); i++) {
-    let stdHrsFormula = '('+sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getA1Notation()+'*'+sheet.getRange(1,HeaderIndex.get(HeaderLabels.CORRECTFACTOR)).getA1Notation()+')';
-    sheet.getRange().setFormula(stdHrsFormula);
+    let stdHrsFormula = '('+sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getA1Notation()+'*'+sheet.getRange(i,HeaderIndex.get(HeaderLabels.CORRECTFACTOR)).getA1Notation()+')';
+    sheet.getRange(i, HeaderIndex.get(HeaderLabels.STDTIME)).setFormula(stdHrsFormula);
   }
 }
 
@@ -317,13 +356,22 @@ function setCost() {
 }
 
 function main() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
+  let range = sheet.getRange("A2:Z3000");
+  range.clearContent();
+  /*
   setHeaderIndex();
   setDate();
-  //separateSharedTasks();
-  //formatDev();
+  setActualTime();
+  removeZeroHrs()*/
+  //removeLastModified();
+  //removeCompletedAt();
+  /*separateSharedTasks();
+  formatDev();
   setActualTime();
   setSumOfActualTime();
   setMonthToDateHours();
   setCorrectingfactor();
-  setCost();
+  setStandardisedHours();
+  setCost();*/
 }
