@@ -1,3 +1,13 @@
+/* The most expensive functions are  
+ *  1. separateDevs()
+ *  2. formatDev()
+ * 
+ * Actions, to do:
+ *  1. delete rows that have a zero balance; 'Actual time'
+ *    >> For this to work, rearrange main()
+ *  2. Refactor formatDev(); It should loop dynamically on config & not hard coded switch.
+ *  3. Review date function
+*/
 
 let startOfMonth = new Date();
 let startDate = new Date(2024, 7, 01); //Measured in miliseconds
@@ -145,48 +155,45 @@ function clearLastModified() {
   let clearColumnFrom = 1;
   let numberOfRows = sheet.getMaxRows()-startingRow;
   let lastColumn = sheet.getLastColumn();
-  let clearRange = sheet.getRange(startingRow,1,numberOfRows,lastColumn);
+  let clearRange = sheet.getRange(startingRow,clearColumnFrom,numberOfRows,lastColumn);
   clearRange.clearContent();
 }
 
-//Review filter and consider blank rows
-/*
-The problem is now, if I clear, the cleared range is incorrect.
-Maybe arrang inverse, the start from where the completed at is not blank.
-THIS WILL WORK! Because the filtered values only apply to cells which contains content. if not content, it's appended below.
-*/
 function clearCompletedAt() {
-  setHeaderIndex();
+  //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  let range = sheet.getRange(1,1,sheet.getLastRow(),sheet.getLastColumn());
   let filter = sheet.getFilter();
   if(filter) {
     filter.remove();
   }
+  let range = sheet.getRange(1,1,sheet.getLastRow(),sheet.getLastColumn());
   filter = range.createFilter();
-  //filter.setColumnFilterCriteria(HeaderIndex.get(HeaderLabels.COMPLETED), SpreadsheetApp.newFilterCriteria().whenCellNotEmpty().build());
-  sheet.getFilter().sort(HeaderIndex.get(HeaderLabels.COMPLETED), true);
-  
-  //sheet.getFilter().remove();
+  sheet.getFilter().sort(HeaderIndex.get(HeaderLabels.COMPLETED), false);
+  sheet.getFilter().remove();
 
-  /*let startingRow = -1;
+  let completedAtValues = sheet.getRange(1,HeaderIndex.get(HeaderLabels.COMPLETED), sheet.getLastRow()).getValues();
+  let indexOfBlank = completedAtValues.findIndex(row => row[0] === "");
+  let lastRow = indexOfBlank+1;
+  Logger.log('indexOfBlank: ' + indexOfBlank);
+
   let completedAt;
-  for(let i=2; i<=sheet.getLastRow(); i++) { //.getLastRow() returns the last row that contains content
+  let startingRow = -1;
+  for(let i=2; i<=sheet.getLastRow(); i++) { /*.getLastRow() returns the last row that contains content (considering all cols)*/
     completedAt = new Date(sheet.getRange(i, HeaderIndex.get(HeaderLabels.COMPLETED)).getValue());
-      startingRow = i;
     if(completedAt < startDate) {
+      Logger.log('Start from: '+i+' completedAt: '+completedAt)
+      startingRow = i;
       break;
     }
   }
   
   Logger.log(startingRow);
   let clearColumnFrom = 1;
-  let numberOfRows = sheet.getMaxRows()-startingRow;
+  let numberOfRows = lastRow-startingRow;
   let lastColumn = sheet.getLastColumn();
-  let clearRange = sheet.getRange(startingRow,1,numberOfRows,lastColumn);
-  clearRange.clearContent();*/
-  
-  
+  let clearRange = sheet.getRange(startingRow,clearColumnFrom,numberOfRows,lastColumn);
+  //clearRange.clearContent();
+  sheet.deleteRows(startingRow,numberOfRows);
 }
 
 /*
@@ -207,32 +214,30 @@ function removeZeroHrs() {
 function separateSharedTasks() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   //Identify column indexes
-  //setHeaderIndex();
-  let headerRow = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-  //Separate devs
+  setHeaderIndex();
   let cellValue = '';
-  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
-    cellValue = sheet.getRange(noRows,devColIndex).getValue();
+  for(let x = sheet.getLastRow(); x>0; x--) {
+    cellValue = sheet.getRange(x,HeaderIndex.get(HeaderLabels.DEVELOPER)).getValue();
     if(cellValue.includes(',')) {
       let splitDevs = cellValue.split(','); //Return the number of devs, not commas.
-      let estTimeTemp = sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.ESTTIME)).getValue();
-      let rollHrsTemp = sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.ROLLTIME)).getValue();
-      let brandTemp = sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.BRAND)).getValue();
-      let regionTemp = sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.REGION)).getValue();
-      let nameTemp = sheet.getRange(noRows, HeaderIndex.get(HeaderLabels.NAME)).getValue();
-      let techCatTemp = sheet.getRange(noRows, HeaderIndex.get(HeaderLabels.CATEGORY)).getValue();
+      let estTimeTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.ESTTIME)).getValue();
+      let rollHrsTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.ROLLTIME)).getValue();
+      let brandTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.BRAND)).getValue();
+      let regionTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.REGION)).getValue();
+      let nameTemp = sheet.getRange(x, HeaderIndex.get(HeaderLabels.NAME)).getValue();
+      let techCatTemp = sheet.getRange(x, HeaderIndex.get(HeaderLabels.CATEGORY)).getValue();
       
-      for(let i=0; i<cellValue.split(',').length-1; i++) {
-        sheet.insertRowAfter(noRows);
-        sheet.getRange(noRows+1,devColIndex).setValue(splitDevs[i+1]).trimWhitespace();
-        sheet.getRange(noRows+1,nameColIndex).setValue(nameTemp);
-        sheet.getRange(noRows+1,regionColIndex).setValue(regionTemp);
-        sheet.getRange(noRows+1,brandColIndex).setValue(brandTemp);
-        sheet.getRange(noRows+1,rollHrsIndex).setValue(rollHrsTemp);
-        sheet.getRange(noRows+1,estTimeColIndex).setValue(estTimeTemp);
-        sheet.getRange(noRows+1,techCatIndex).setValue(techCatTemp);
+      for(let y=0; y<cellValue.split(',').length-1; y++) {
+        sheet.insertRowAfter(x);
+        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(splitDevs[y+1]).trimWhitespace();
+        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.NAME)).setValue(nameTemp);
+        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.REGION)).setValue(regionTemp);
+        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.BRAND)).setValue(brandTemp);
+        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.ROLLTIME)).setValue(rollHrsTemp);
+        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.ESTTIME)).setValue(estTimeTemp);
+        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.CATEGORY)).setValue(techCatTemp);
       }
-      sheet.getRange(noRows,devColIndex).setValue(splitDevs[0]);
+      sheet.getRange(x,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(splitDevs[0]);
     }
   }
 }
@@ -241,7 +246,7 @@ function formatDev() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   //Format developer names
   let cellValue = '';
-  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
+  for(let noRows = sheet.getLastRow(); noRows>0; noRows--) {
     cellValue = sheet.getRange(noRows, HeaderIndex.get(HeaderLabels.DEVELOPER)).getValue();
     switch (cellValue) {
       case MapToDevEmail.BJORN:
@@ -276,6 +281,8 @@ function formatDev() {
         break;
       case MapToDevEmail.VIJAY:
         sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.VIJAY);
+        break;
+      default:
         break;
     }
   }
@@ -364,9 +371,9 @@ function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   setDate();
   setHeaderIndex();
-  clearLastModified();
+  /*clearLastModified();
   clearCompletedAt();
-  separateSharedTasks();
+  separateSharedTasks();*/
   formatDev();
   setActualTime();
   setSumOfActualTime();
