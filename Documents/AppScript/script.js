@@ -1,8 +1,8 @@
 
 let startOfMonth = new Date();
-let startDate = new Date(2024, 08, 01); //Measured in miliseconds
+let startDate = new Date(2024, 7, 01); //Measured in miliseconds
 let endOfMonth = new Date();
-let endDate = new Date(2024, 08, 31);
+let endDate = new Date(2024, 7, 31);
 const currentdate = new Date();
 const dayOfMonth = new Date().getDate();
 const daysInMonth = new Date(currentdate.getFullYear(), currentdate.getMonth()+1, 0).getDate();
@@ -114,78 +114,82 @@ function setHeaderIndex() {
   })
 }
 
-function removeLastModified() {
+function clearLastModified() {
   /* 
   Apply filter
   Sort by last modified
   Clear contents
   */
-  setHeaderIndex();
+  //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   let range = sheet.getRange(1,1,sheet.getLastRow(),sheet.getLastColumn());
+  let filter = sheet.getFilter();
+  if(filter) {
+    filter.remove();
+  }
   range.createFilter();
   sheet.sort(HeaderIndex.get(HeaderLabels.MODIFIED), false);
   sheet.getFilter().remove();
   
-  //So, the if comparison isn't working.
-  let rowIndex = -1;
-  let lastModified = '';
-  for(let i=1; i<sheet.getLastRow(); i++) {
-    lastModified = sheet.getRange(i, HeaderIndex.get(HeaderLabels.MODIFIED)).getValue();
+  let startingRow = -1;
+  let lastModified;
+  for(let i=2; i<=sheet.getLastRow(); i++) { //.getLastRow() returns the last row that contains content
+    lastModified = new Date(sheet.getRange(i, HeaderIndex.get(HeaderLabels.MODIFIED)).getValue());
+      startingRow = i;
     if(lastModified < startDate) {
-      Logger.log(i);
-      rowIndex = i;
-      i=sheet.getLastRow();
+      break;
     }
   }
-
-  /*
-  let value = sheet.getRange(1, HeaderIndex.get(HeaderLabels.MODIFIED)).getValue();
-  //Validate & delete irrelevant rows
-  let data = sheet.getDataRange().getValues();
-  let cellValue = '';
-  for(let i = sheet.getMaxRows(); i>0; i--) {
-    cellValue = sheet.getRange(i, 3).getValue();
-    let range = sheet.getRange(i,1,1,sheet.getLastColumn());
-    let cellDate = new Date(cellValue);
-    if(!isNaN(cellDate)) {
-      if(cellDate <= startDate || celldate >= endDate) {
-        //Logger.log('match: ' + cellDate + ' Row: ' + i)
-        //sheet.deleteRow(i);
-        range.clearContent();
-      } 
-    } else {
-      //Logger.log('invalid date: ' + i);
-      //sheet.deleteRow(i);
-      range.clearContent();
-    }
-  }*/
+  
+  Logger.log(startingRow);
+  let clearColumnFrom = 1;
+  let numberOfRows = sheet.getMaxRows()-startingRow;
+  let lastColumn = sheet.getLastColumn();
+  let clearRange = sheet.getRange(startingRow,1,numberOfRows,lastColumn);
+  clearRange.clearContent();
 }
 
-//Remove hard coded indexing of HeaderLabels.COMPLETED
-function removeCompletedAt() {
-  //Does the 'Completed At' exist
+//Review filter and consider blank rows
+/*
+The problem is now, if I clear, the cleared range is incorrect.
+Maybe arrang inverse, the start from where the completed at is not blank.
+THIS WILL WORK! Because the filtered values only apply to cells which contains content. if not content, it's appended below.
+*/
+function clearCompletedAt() {
+  setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  let value = sheet.getRange(1, HeaderIndex.get(HeaderLabels.COMPLETED)).getValue();
-  //Validate and delete irrelevant rows
-  let data = sheet.getDataRange().getValues();
-  let cellValue = '';
-  for(let noRows = sheet.getMaxRows(); noRows>0; noRows--) {
-    cellValue = sheet.getRange(noRows, 3).getValue();
-    let cellDate = new Date(cellValue);
-    if(!isNaN(cellDate)) {
-      if(cellDate <= startDate || celldate >= endDate) {
-        //Logger.log('match: ' + cellDate + ' Row: ' + noRows)
-        sheet.deleteRow(noRows);
-      } 
-    } else {
-      //Logger.log('invalid date: ' + noRows);
-      sheet.clearContents(noRows);
-      //sheet.deleteRow(noRows);
+  let range = sheet.getRange(1,1,sheet.getLastRow(),sheet.getLastColumn());
+  let filter = sheet.getFilter();
+  if(filter) {
+    filter.remove();
+  }
+  filter = range.createFilter();
+  //filter.setColumnFilterCriteria(HeaderIndex.get(HeaderLabels.COMPLETED), SpreadsheetApp.newFilterCriteria().whenCellNotEmpty().build());
+  sheet.getFilter().sort(HeaderIndex.get(HeaderLabels.COMPLETED), true);
+  
+  //sheet.getFilter().remove();
+
+  /*let startingRow = -1;
+  let completedAt;
+  for(let i=2; i<=sheet.getLastRow(); i++) { //.getLastRow() returns the last row that contains content
+    completedAt = new Date(sheet.getRange(i, HeaderIndex.get(HeaderLabels.COMPLETED)).getValue());
+      startingRow = i;
+    if(completedAt < startDate) {
+      break;
     }
   }
+  
+  Logger.log(startingRow);
+  let clearColumnFrom = 1;
+  let numberOfRows = sheet.getMaxRows()-startingRow;
+  let lastColumn = sheet.getLastColumn();
+  let clearRange = sheet.getRange(startingRow,1,numberOfRows,lastColumn);
+  clearRange.clearContent();*/
+  
+  
 }
 
+/*
 function removeZeroHrs() {
   //If actual hrs is zero, delete the row
   setHeaderIndex();
@@ -198,6 +202,7 @@ function removeZeroHrs() {
     }
   }
 }
+*/
 
 function separateSharedTasks() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
@@ -357,21 +362,16 @@ function setCost() {
 
 function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  let range = sheet.getRange("A2:Z3000");
-  range.clearContent();
-  /*
-  setHeaderIndex();
   setDate();
-  setActualTime();
-  removeZeroHrs()*/
-  //removeLastModified();
-  //removeCompletedAt();
-  /*separateSharedTasks();
+  setHeaderIndex();
+  clearLastModified();
+  clearCompletedAt();
+  separateSharedTasks();
   formatDev();
   setActualTime();
   setSumOfActualTime();
   setMonthToDateHours();
   setCorrectingfactor();
   setStandardisedHours();
-  setCost();*/
+  setCost();
 }
