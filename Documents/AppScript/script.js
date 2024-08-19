@@ -10,7 +10,7 @@
 */
 
 let startOfMonth = new Date();
-let startDate = new Date(2024, 7, 01); //Measured in miliseconds
+let startDate = new Date(2024, 7, 01); //Month values are incremented from 0-11
 let endOfMonth = new Date();
 let endDate = new Date(2024, 7, 31);
 const currentdate = new Date();
@@ -18,7 +18,7 @@ const dayOfMonth = new Date().getDate();
 const daysInMonth = new Date(currentdate.getFullYear(), currentdate.getMonth()+1, 0).getDate();
 const dataSheet = 'Copy';
 const correctingFactorSheet = 'Correcting Factor';
-const costFactor = 580*24; //Note that the costFactor needs to be *24 to convert to int
+const costFactor = 580*24; //Duration must be *24 to convert to int. This is done here.
 
 //Configurable enums / Maps
 //Further require enums for formulas * all date values above
@@ -49,6 +49,20 @@ const MapToDevName = {
   SERGEI: 'Sergei Pringiers',
   VIJAY: 'Vijay Kumar',
 }
+
+const MapEmailToName = ([
+  ['charles.li@velosure.com.au', 'Charles Li'],
+  ['clyde@twothreebird.com', 'Clyde Cyster'],
+  ['bjorn@twothreebird.com', 'Björn Theart'],
+  ['vernon@twothreebird.com','Vernon Grant'],
+  ['hitesh@twothreebird.com', 'Hitesh Maity'],
+  ['ryan@twothreebird.com', 'Ryan Peel'],
+  ['curtis@twothreebird.com', 'Curtis Page'],
+  ['dirk@twothreebird.com', 'Dirk Dircksen'],
+  ['brendan@twothreebird.com', 'Brendan van der Meulen'],
+  ['sergei@twothreebird.com', 'Sergei pringiers'],
+  ['vijay@twothreebird.com', 'Vijay Kumar']
+]);
 
 const HeaderLabels = {
   CREATED: 'Created At',
@@ -151,7 +165,7 @@ function clearLastModified() {
     }
   }
   
-  Logger.log(startingRow);
+  //Logger.log(startingRow);
   let clearColumnFrom = 1;
   let numberOfRows = sheet.getMaxRows()-startingRow;
   let lastColumn = sheet.getLastColumn();
@@ -174,26 +188,25 @@ function clearCompletedAt() {
   let completedAtValues = sheet.getRange(1,HeaderIndex.get(HeaderLabels.COMPLETED), sheet.getLastRow()).getValues();
   let indexOfBlank = completedAtValues.findIndex(row => row[0] === "");
   let lastRow = indexOfBlank+1;
-  Logger.log('indexOfBlank: ' + indexOfBlank);
+  //Logger.log('indexOfBlank: ' + indexOfBlank);
 
   let completedAt;
   let startingRow = -1;
   for(let i=2; i<=sheet.getLastRow(); i++) { /*.getLastRow() returns the last row that contains content (considering all cols)*/
     completedAt = new Date(sheet.getRange(i, HeaderIndex.get(HeaderLabels.COMPLETED)).getValue());
     if(completedAt < startDate) {
-      Logger.log('Start from: '+i+' completedAt: '+completedAt)
       startingRow = i;
       break;
     }
   }
-  
-  Logger.log(startingRow);
-  let clearColumnFrom = 1;
-  let numberOfRows = lastRow-startingRow;
-  let lastColumn = sheet.getLastColumn();
-  let clearRange = sheet.getRange(startingRow,clearColumnFrom,numberOfRows,lastColumn);
-  //clearRange.clearContent();
-  sheet.deleteRows(startingRow,numberOfRows);
+  if(startingRow>0) {
+    let clearColumnFrom = 1;
+    let numberOfRows = lastRow-startingRow;
+    let lastColumn = sheet.getLastColumn();
+    let clearRange = sheet.getRange(startingRow,clearColumnFrom,numberOfRows,lastColumn);
+    //clearRange.clearContent();
+    sheet.deleteRows(startingRow,numberOfRows);
+  }
 }
 
 /*
@@ -214,7 +227,7 @@ function removeZeroHrs() {
 function separateSharedTasks() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   //Identify column indexes
-  setHeaderIndex();
+  //setHeaderIndex();
   let cellValue = '';
   for(let x = sheet.getLastRow(); x>0; x--) {
     cellValue = sheet.getRange(x,HeaderIndex.get(HeaderLabels.DEVELOPER)).getValue();
@@ -243,12 +256,20 @@ function separateSharedTasks() {
 }
 
 function formatDev() {
+  setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   //Format developer names
   let cellValue = '';
   for(let noRows = sheet.getLastRow(); noRows>0; noRows--) {
     cellValue = sheet.getRange(noRows, HeaderIndex.get(HeaderLabels.DEVELOPER)).getValue();
-    switch (cellValue) {
+
+    MapEmailToName.forEach(function(value, key){
+      if(cellValue === key) {
+        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(value);
+      }
+    })
+
+    /*switch (cellValue) {
       case MapToDevEmail.BJORN:
         sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.BJORN);
         break;
@@ -284,7 +305,7 @@ function formatDev() {
         break;
       default:
         break;
-    }
+    }*/
   }
 }
 
@@ -292,7 +313,7 @@ function setActualTime() {
   //add col and do math
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   //setHeaderIndex();
-  for(let i=2; i<=sheet.getMaxRows(); i++) {
+  for(let i=2; i<=sheet.getLastRow(); i++) {
     let estA1 = sheet.getRange(i,HeaderIndex.get(HeaderLabels.ESTTIME)).getA1Notation();
     let rollA1 = sheet.getRange(i,HeaderIndex.get(HeaderLabels.ROLLTIME)).getA1Notation();
     let difference = '=('+estA1+'-'+rollA1+')';
@@ -303,13 +324,13 @@ function setActualTime() {
 function setSumOfActualTime() {
   //for each dev, sum the formatted hours
   //Compare to the Number of working days in current month?
-  setHeaderIndex();
+  //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   let d = sheet.getRange(1,HeaderIndex.get(HeaderLabels.DEVELOPER)).getA1Notation().replace(/[0-9]/g,'');
   let hrs = sheet.getRange(1,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getA1Notation().replace(/[0-9]/g,'');
   
   let developerCellNotation;
-  for(let i=2; i<=sheet.getMaxRows(); i++) {
+  for(let i=2; i<=sheet.getLastRow(); i++) {
     developerCellNotation = sheet.getRange(i,HeaderIndex.get(HeaderLabels.DEVELOPER)).getA1Notation();
     let sumIf = '=SUMIF(' + d + ':' + d + ',' + developerCellNotation + ',' + hrs + ':' + hrs + ')';
     sheet.getRange(i,HeaderIndex.get(HeaderLabels.SUMTIME)).setFormula(sumIf);
@@ -322,7 +343,7 @@ function setMonthToDateHours() {
   //Using ((dayOfMonth / daysInMonth)*168)/24
   let formula = '=((' + dayOfMonth + '/' + daysInMonth + ')*168/24)'; //HARDCODE ALERT, BOTH FORMULA AND STD HRS
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  for(let i=2; i<=sheet.getMaxRows(); i++) {
+  for(let i=2; i<=sheet.getLastRow(); i++) {
     sheet.getRange(i, HeaderIndex.get(HeaderLabels.MTDHRS)).setFormula(formula);
   }
 }
@@ -337,7 +358,7 @@ function setCorrectingfactor() {
   then: 1/( (MTDHRS/24)/SUMTIME )
   */
   let i = -1;
-  for(i=2; i<=sheet.getMaxRows(); i++) {
+  for(i=2; i<=sheet.getLastRow(); i++) {
     let condition1 = '('+sheet.getRange(i, HeaderIndex.get(HeaderLabels.SUMTIME)).getA1Notation()+'<'+sheet.getRange(i, HeaderIndex.get(HeaderLabels.MTDHRS)).getA1Notation()+')';
     let then1 = '('+sheet.getRange(i,HeaderIndex.get(HeaderLabels.MTDHRS)).getA1Notation()+'/'+sheet.getRange(i,HeaderIndex.get(HeaderLabels.SUMTIME)).getA1Notation()+')';
     let condition2 = '('+sheet.getRange(i, HeaderIndex.get(HeaderLabels.SUMTIME)).getA1Notation()+'>'+sheet.getRange(i, HeaderIndex.get(HeaderLabels.MTDHRS)).getA1Notation()+')';
@@ -351,7 +372,7 @@ function setStandardisedHours() {
   //correctingFactor * actualHours
   //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  for(let i=2; i<=sheet.getMaxRows(); i++) {
+  for(let i=2; i<=sheet.getLastRow(); i++) {
     let stdHrsFormula = '('+sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getA1Notation()+'*'+sheet.getRange(i,HeaderIndex.get(HeaderLabels.CORRECTFACTOR)).getA1Notation()+')';
     sheet.getRange(i, HeaderIndex.get(HeaderLabels.STDTIME)).setFormula(stdHrsFormula);
   }
@@ -359,9 +380,9 @@ function setStandardisedHours() {
 
 function setCost() {
   //dur*24*580
-  setHeaderIndex();
+  //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  for(let i=2; i<=sheet.getMaxRows(); i++) {
+  for(let i=2; i<=sheet.getLastRow(); i++) {
     let costFormula = '('+sheet.getRange(i,HeaderIndex.get(HeaderLabels.STDTIME)).getA1Notation()+'*'+costFactor+')';
     sheet.getRange(i,HeaderIndex.get(HeaderLabels.COST)).setFormula(costFormula);
   }
@@ -371,9 +392,9 @@ function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   setDate();
   setHeaderIndex();
-  /*clearLastModified();
+  clearLastModified();
   clearCompletedAt();
-  separateSharedTasks();*/
+  separateSharedTasks();
   formatDev();
   setActualTime();
   setSumOfActualTime();
