@@ -50,7 +50,7 @@ const MapToDevName = {
   VIJAY: 'Vijay Kumar',
 }
 
-const MapEmailToName = ([
+const MapEmailToName = new Map([
   ['charles.li@velosure.com.au', 'Charles Li'],
   ['clyde@twothreebird.com', 'Clyde Cyster'],
   ['bjorn@twothreebird.com', 'Björn Theart'],
@@ -209,20 +209,32 @@ function clearCompletedAt() {
   }
 }
 
-/*
-function removeZeroHrs() {
-  //If actual hrs is zero, delete the row
+function clearZeroEst() {
   setHeaderIndex();
-  setActualTime();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  for(let i=sheet.getMaxRows(); i>1; i--) {
-    let range = sheet.getRange(i,1,1,sheet.getLastColumn());
-    if(sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getValue() == 0 || sheet.getRange(i,HeaderIndex.get(HeaderLabels.ACTUALTIME)).getValue() == isNaN) {
-      range.clearContent();
-    }
+  let filter = sheet.getFilter();
+  if(filter) {
+    filter.remove();
+  }
+  let range = sheet.getRange(1,1,sheet.getLastRow(),sheet.getLastColumn());
+  filter = range.createFilter();
+  sheet.getFilter().sort(HeaderIndex.get(HeaderLabels.ESTTIME), false);
+  sheet.getFilter().remove();
+  
+  let estTimeValues = sheet.getRange(1,HeaderIndex.get(HeaderLabels.ESTTIME), sheet.getLastRow()).getValues();
+  let startingRow = estTimeValues.findIndex(row => row[0] === "")+1;
+  let lastRow = sheet.getLastRow();
+
+  if(startingRow>0) {
+    let numberOfRows = lastRow-startingRow;
+    let lastColumn = sheet.getLastColumn();
+    let clearColumnFrom = 1;
+
+    let clearRange = sheet.getRange(startingRow,clearColumnFrom,numberOfRows,lastColumn);
+    clearRange.clearContent();
+    //sheet.deleteRows(startingRow,numberOfRows);
   }
 }
-*/
 
 function separateSharedTasks() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
@@ -268,44 +280,6 @@ function formatDev() {
         sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(value);
       }
     })
-
-    /*switch (cellValue) {
-      case MapToDevEmail.BJORN:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.BJORN);
-        break;
-      case MapToDevEmail.CHARLES:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.CHARLES);
-        break;
-      case MapToDevEmail.CLYDE:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.CLYDE);
-        break;
-      case MapToDevEmail.VERNON:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.VERNON);
-        break;
-      case MapToDevEmail.HITESH:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.HITESH);
-        break;
-      case MapToDevEmail.RYAN:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.RYAN);
-        break;
-      case MapToDevEmail.BRENDAN:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.BRENDAN);
-        break;
-      case MapToDevEmail.CURTIS:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.CURTIS);
-        break;
-      case MapToDevEmail.DIRK:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.DIRK);
-        break;
-      case MapToDevEmail.SERGEI:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.SERGEI);
-        break;
-      case MapToDevEmail.VIJAY:
-        sheet.getRange(noRows,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(MapToDevName.VIJAY);
-        break;
-      default:
-        break;
-    }*/
   }
 }
 
