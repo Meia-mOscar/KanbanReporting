@@ -1,12 +1,7 @@
-/* The most expensive functions are  
- *  1. separateDevs()
- *  2. formatDev()
- * 
- * Actions, to do:
- *  1. delete rows that have a zero balance; 'Actual time'
- *    >> For this to work, rearrange main()
- *  2. Refactor formatDev(); It should loop dynamically on config & not hard coded switch.
- *  3. Review date function
+/* Actions, to do:
+ * 1. Refactor main & foo's  to bounce 'sheet' from one to another
+ * 2. Review date function
+ *  >> Map / Enum for each date value
 */
 
 let startOfMonth = new Date();
@@ -17,38 +12,8 @@ const currentdate = new Date();
 const dayOfMonth = new Date().getDate();
 const daysInMonth = new Date(currentdate.getFullYear(), currentdate.getMonth()+1, 0).getDate();
 const dataSheet = 'Copy';
-const correctingFactorSheet = 'Correcting Factor';
+//const correctingFactorSheet = 'Correcting Factor';
 const costFactor = 580*24; //Duration must be *24 to convert to int. This is done here.
-
-//Configurable enums / Maps
-//Further require enums for formulas * all date values above
-const MapToDevEmail = {
-  CHARLES: 'charles.li@velosure.com.au', //and add a value 'Charles Li'
-  CLYDE: 'clyde@twothreebird.com',
-  BJORN: 'bjorn@twothreebird.com',
-  VERNON: 'vernon@twothreebird.com',
-  HITESH: 'hitesh@twothreebird.com',
-  RYAN: 'ryan@twothreebird.com',
-  CURTIS: 'curtis@twothreebird.com',
-  DIRK: 'dirk@twothreebird.com',
-  BRENDAN: 'brendan@twothreebird.com',
-  SERGEI: 'sergei@twothreebird.com',
-  VIJAY: 'vijay@twothreebird.com',
-};
-
-const MapToDevName = {
-  CHARLES: 'Charles Li', //and add a value 'Charles Li'
-  CLYDE: 'Clyde Cyster',
-  BJORN: 'Björn Theart',
-  VERNON: 'Vernon Grant',
-  HITESH: 'Hitesh Maity',
-  RYAN: 'Ryan Peel',
-  CURTIS: 'Curtis Page',
-  DIRK: 'Dirk Dircksen',
-  BRENDAN: 'Brendan van der Meulen',
-  SERGEI: 'Sergei Pringiers',
-  VIJAY: 'Vijay Kumar',
-}
 
 const MapEmailToName = new Map([
   ['charles.li@velosure.com.au', 'Charles Li'],
@@ -116,7 +81,7 @@ function setDate() {
 
 function setHeaderIndex() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  let headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   //If some headers are not found, create column
   for(let i=0; i<headers.length; i++) {
     HeaderIndex.forEach(function(value, key) {
@@ -210,7 +175,7 @@ function clearCompletedAt() {
 }
 
 function clearZeroEst() {
-  setHeaderIndex();
+  //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   let filter = sheet.getFilter();
   if(filter) {
@@ -362,10 +327,20 @@ function setCost() {
   }
 }
 
+function setDurationFormat() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
+  setHeaderIndex();
+  /* for each duration column / just the used one, StandardisedHours */
+  let range = sheet.getRange(2, HeaderIndex.get(HeaderLabels.STDTIME),sheet.getLastRow()-1);
+  let durFormat = '[h]:mm:ss';
+  range.setNumberFormat(durFormat)
+}
+
 function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   setDate();
   setHeaderIndex();
+  clearZeroEst();
   clearLastModified();
   clearCompletedAt();
   separateSharedTasks();
@@ -375,5 +350,6 @@ function main() {
   setMonthToDateHours();
   setCorrectingfactor();
   setStandardisedHours();
+  setDurationFormat();
   setCost();
 }
