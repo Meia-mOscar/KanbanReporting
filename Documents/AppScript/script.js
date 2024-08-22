@@ -1,19 +1,16 @@
 /* Actions, to do:
  * 1. Refactor main & foo's  to bounce 'sheet' from one to another
- * 2. Review date function
- *  >> Map / Enum for each date value
 */
 
-let startOfMonth = new Date();
-let startDate = new Date(2024, 7, 01); //Month values are incremented from 0-11
-let endOfMonth = new Date();
-let endDate = new Date(2024, 7, 31);
-const currentdate = new Date();
-const dayOfMonth = new Date().getDate();
-const daysInMonth = new Date(currentdate.getFullYear(), currentdate.getMonth()+1, 0).getDate();
 const dataSheet = 'Copy';
-//const correctingFactorSheet = 'Correcting Factor';
-const costFactor = 580*24; //Duration must be *24 to convert to int. This is done here.
+
+let Configs = {
+  STARTDATE: new Date(),
+  ENDDATE: new Date(),
+  DAYOFMONTH: -1,
+  DAYSINMONTH: -1,
+  COSTFACTOR: 0
+}
 
 const MapEmailToName = new Map([
   ['charles.li@velosure.com.au', 'Charles Li'],
@@ -71,12 +68,23 @@ let HeaderIndex = new Map([
   [HeaderLabels.COST, -1]
 ]);
 
-function setDate() {
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0,0,0,0);
-  endOfMonth.setMonth(startOfMonth.getMonth()+1);
-  endOfMonth.setDate(0);
-  endOfMonth.setHours(0,0,0,0);
+function setConfigs() {
+  Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth()+1, 0).getDate();
+  Logger.log(Configs.DAYSINMONTH);
+
+  Configs.STARTDATE.setDate(1);
+  Configs.STARTDATE.setHours(0,0,0,0);
+  Logger.log(Configs.STARTDATE);
+
+  Configs.ENDDATE.setMonth(Configs.STARTDATE.getMonth()+1);
+  Configs.ENDDATE.setDate(0);
+  Configs.ENDDATE.setHours(0,0,0,0);
+  Logger.log(Configs.ENDDATE);
+
+  Configs.DAYOFMONTH = new Date().getDate();
+  Logger.log(Configs.DAYOFMONTH);
+
+  Configs.COSTFACTOR = 580*24; //Duration must be *24 to convert to int. This is done here.
 }
 
 function setHeaderIndex() {
@@ -125,7 +133,7 @@ function clearLastModified() {
   for(let i=2; i<=sheet.getLastRow(); i++) { //.getLastRow() returns the last row that contains content
     lastModified = new Date(sheet.getRange(i, HeaderIndex.get(HeaderLabels.MODIFIED)).getValue());
       startingRow = i;
-    if(lastModified < startDate) {
+    if(lastModified < Configs.STARTDATE) {
       break;
     }
   }
@@ -159,7 +167,7 @@ function clearCompletedAt() {
   let startingRow = -1;
   for(let i=2; i<=sheet.getLastRow(); i++) { /*.getLastRow() returns the last row that contains content (considering all cols)*/
     completedAt = new Date(sheet.getRange(i, HeaderIndex.get(HeaderLabels.COMPLETED)).getValue());
-    if(completedAt < startDate) {
+    if(completedAt < Configs.STARTDATE) {
       startingRow = i;
       break;
     }
@@ -280,7 +288,7 @@ function setSumOfActualTime() {
 function setMonthToDateHours() {
   //setHeaderIndex();
   //Using ((dayOfMonth / daysInMonth)*168)/24
-  let formula = '=((' + dayOfMonth + '/' + daysInMonth + ')*168/24)'; //HARDCODE ALERT, BOTH FORMULA AND STD HRS
+  let formula = '=((' + Configs.DAYOFMONTH + '/' + Configs.DAYSINMONTH + ')*168/24)'; //HARDCODE ALERT, BOTH FORMULA AND STD HRS
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   for(let i=2; i<=sheet.getLastRow(); i++) {
     sheet.getRange(i, HeaderIndex.get(HeaderLabels.MTDHRS)).setFormula(formula);
@@ -318,11 +326,11 @@ function setStandardisedHours() {
 }
 
 function setCost() {
-  //dur*24*580
+  //dur*24*hourlyCost
   //setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   for(let i=2; i<=sheet.getLastRow(); i++) {
-    let costFormula = '('+sheet.getRange(i,HeaderIndex.get(HeaderLabels.STDTIME)).getA1Notation()+'*'+costFactor+')';
+    let costFormula = '('+sheet.getRange(i,HeaderIndex.get(HeaderLabels.STDTIME)).getA1Notation()+'*'+Configs.COSTFACTOR+')';
     sheet.getRange(i,HeaderIndex.get(HeaderLabels.COST)).setFormula(costFormula);
   }
 }
@@ -338,7 +346,7 @@ function setDurationFormat() {
 
 function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  setDate();
+  setConfigs();
   setHeaderIndex();
   clearZeroEst();
   clearLastModified();
