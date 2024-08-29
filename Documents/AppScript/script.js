@@ -344,6 +344,27 @@ function setDurationFormat() {
   range.setNumberFormat(durFormat)
 }
 
+function setEntities() {
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
+  setHeaderIndex();
+  /*
+   * Filter for ETA on brand
+   * Identify number of the rows 
+   * Set region to "UK ETA"
+   * Filter for P529 onn brand
+   * Identify the number of rows
+   * Set region to "USA P529" 
+   * 
+   */
+  let filter = sheet.getFilter();
+  if(filter) {
+    filter.remove();
+  }
+  let range = sheet.getRange(1,1,sheet.getLastRow(), sheet.getLastColumn());
+  filter.getRange(range);
+  sheet.getFilter().setColumnFilterCriteria(HeaderIndex.get(HeaderLabels.BRAND),/*filter criteria ETA*/);
+}
+
 function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   setConfigs();
