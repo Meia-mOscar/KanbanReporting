@@ -23,7 +23,10 @@ const MapEmailToName = new Map([
   ['dirk@twothreebird.com', 'Dirk Dircksen'],
   ['brendan@twothreebird.com', 'Brendan van der Meulen'],
   ['sergei@twothreebird.com', 'Sergei pringiers'],
-  ['vijay@twothreebird.com', 'Vijay Kumar']
+  ['vijay@twothreebird.com', 'Vijay Kumar'],
+  ['lara.ferroni@twothreebird.com','Lara Ferroni'],
+  ['lara@project529.com','Lara Ferroni'],
+  ['brett.field@twothreebird.com','Brett Field']
 ]);
 
 const HeaderLabels = {
@@ -379,7 +382,7 @@ function setEntity(brandIndex, entity) {
 
   for(start; start<=end; start++) {
     range = sheet.getRange(start, HeaderIndex.get(HeaderLabels.REGION));
-    Logger.log(range.getA1Notation());
+    //Logger.log(range.getA1Notation());
     range.setValue(entity);
   }
   filter.remove();
@@ -396,22 +399,38 @@ function setBrandIndex() {
 function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   setConfigs();
+  Logger.log('configs set.');
   setHeaderIndex();
+  Logger.log('header index set.');
   clearZeroEst();
+  Logger.log('zeros cleared.');
   clearLastModified();
+  Logger.log('modified cleared.');
   clearCompletedAt();
+  Logger.log('completed at cleared.');
   separateSharedTasks();
+  Logger.log('separated tasks.');
   formatDev();
+  Logger.log('formatted dev.');
   setActualTime();
+  Logger.log('actual time set.');
   setSumOfActualTime();
+  Logger.log('summed set.');
   setMonthToDateHours();
+  Logger.log('mtd hrs set.');
   setCorrectingfactor();
+  Logger.log('correcting factor set.');
   setStandardisedHours();
+  Logger.log('standardised set.');
   setDurationFormat();
+  Logger.log('dur set.');
   let brandIndex = HeaderIndex.get(HeaderLabels.BRAND);
   let entity = 'ETA';
   setEntity(brandIndex,entity);
+  Logger.log('entity set.');
   entity = 'P529';
   setEntity(brandIndex,entity);
+  Logger.log('entity set.');
   setCost();
+  Logger.log('cost set.');
 }
