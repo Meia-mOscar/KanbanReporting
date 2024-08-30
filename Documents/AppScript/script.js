@@ -344,25 +344,53 @@ function setDurationFormat() {
   range.setNumberFormat(durFormat)
 }
 
-function setEntities() {
+function setEntity(brandIndex, entity) {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  setHeaderIndex();
+  //setHeaderIndex();
   /*
-   * Filter for ETA on brand
-   * Identify number of the rows 
-   * Set region to "UK ETA"
-   * Filter for P529 onn brand
-   * Identify the number of rows
-   * Set region to "USA P529" 
-   * 
+   * Arrange by brand, find the range and apply the brand to the region.
+   * 'entity' = brand: {'ETA', 'P529'}
+   * 'brandIndex' = Headerinde.get(HeaderLabel.BRAND)
    */
+
   let filter = sheet.getFilter();
   if(filter) {
     filter.remove();
   }
+
+  let start = -1;
+  let end = -1;
+
   let range = sheet.getRange(1,1,sheet.getLastRow(), sheet.getLastColumn());
-  filter.getRange(range);
-  sheet.getFilter().setColumnFilterCriteria(HeaderIndex.get(HeaderLabels.BRAND),/*filter criteria ETA*/);
+  filter = range.createFilter();
+  filter.sort(brandIndex,true);
+  for(let i=1; i<=sheet.getLastRow(); i++) {
+    if(sheet.getRange(i,brandIndex).getValue() == entity) {
+      start = i;
+      break;
+    }
+  }
+  for(let i=start; i<=sheet.getLastRow(); i++) {
+    if(sheet.getRange(i,brandIndex).getValue() != entity) {
+      end = i-1;
+      break;
+    }
+  }
+
+  for(start; start<=end; start++) {
+    range = sheet.getRange(start, HeaderIndex.get(HeaderLabels.REGION));
+    Logger.log(range.getA1Notation());
+    range.setValue(entity);
+  }
+  filter.remove();
+
+}
+
+function setBrandIndex() {
+  /*
+   * No for a set enum.
+   * Brand to Region hardcoded in main().
+   */
 }
 
 function main() {
@@ -380,5 +408,10 @@ function main() {
   setCorrectingfactor();
   setStandardisedHours();
   setDurationFormat();
+  let brandIndex = HeaderIndex.get(HeaderLabels.BRAND);
+  let entity = 'ETA';
+  setEntity(brandIndex,entity);
+  entity = 'P529';
+  setEntity(brandIndex,entity);
   setCost();
 }
