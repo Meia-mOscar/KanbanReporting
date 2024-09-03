@@ -71,11 +71,19 @@ let HeaderIndex = new Map([
   [HeaderLabels.COST, -1]
 ]);
 
-function setConfigs() {
-  Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth()+1, 0).getDate();
+function setConfigs(isEndOfMonth) {
+  if(isEndOfMonth == true) {
+    Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth(), 0).getDate(); /*EOM */
+  } else {
+    Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth()+1, 0).getDate();
+  }
   Logger.log(Configs.DAYSINMONTH);
 
-  Configs.STARTDATE.setDate(1);
+  if(isEndOfMonth == true) {
+    Configs.STARTDATE = new Date(2024,7,1); /*EOM*/
+  } else {
+    Configs.STARTDATE.setDate(1);
+  }
   Configs.STARTDATE.setHours(0,0,0,0);
   Logger.log(Configs.STARTDATE);
 
@@ -398,7 +406,13 @@ function setBrandIndex() {
 
 function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  setConfigs();
+  /**
+   * Pass bool isEndOfMonth to setConfigs, which then determines the dates set.
+   * I.e is it the previous month, or current month.
+   */
+  const isEndOfMonth = false;
+
+  setConfigs(isEndOfMonth);
   Logger.log('configs set.');
   setHeaderIndex();
   Logger.log('header index set.');
