@@ -22,7 +22,7 @@ const MapEmailToName = new Map([
   ['curtis@twothreebird.com', 'Curtis Page'],
   ['dirk@twothreebird.com', 'Dirk Dircksen'],
   ['brendan@twothreebird.com', 'Brendan van der Meulen'],
-  ['sergei@twothreebird.com', 'Sergei pringiers'],
+  ['sergei@twothreebird.com', 'Sergei Pringiers'],
   ['vijay@twothreebird.com', 'Vijay Kumar'],
   ['lara.ferroni@twothreebird.com','Lara Ferroni'],
   ['lara@project529.com','Lara Ferroni'],
@@ -71,7 +71,7 @@ let HeaderIndex = new Map([
   [HeaderLabels.COST, -1]
 ]);
 
-function setConfigs(isEndOfMonth) {
+function setConfigs(isEndOfMonth) {  
   if(isEndOfMonth == true) {
     Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth(), 0).getDate(); /*EOM */
   } else {
@@ -80,7 +80,7 @@ function setConfigs(isEndOfMonth) {
   Logger.log(Configs.DAYSINMONTH);
 
   if(isEndOfMonth == true) {
-    Configs.STARTDATE = new Date(2024,7,1); /*EOM*/
+    Configs.STARTDATE = new Date(2024,8,1); /*EOM*/
   } else {
     Configs.STARTDATE.setDate(1);
   }
@@ -297,13 +297,13 @@ function setSumOfActualTime() {
 }
 
 function setMonthToDateHours() {
-  //setHeaderIndex();
-  //Using ((dayOfMonth / daysInMonth)*168)/24
-  let formula = '=((' + Configs.DAYOFMONTH + '/' + Configs.DAYSINMONTH + ')*168/24)'; //HARDCODE ALERT, BOTH FORMULA AND STD HRS
+  setConfigs();
+  setHeaderIndex();
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
-  for(let i=2; i<=sheet.getLastRow(); i++) {
-    sheet.getRange(i, HeaderIndex.get(HeaderLabels.MTDHRS)).setFormula(formula);
-  }
+  Logger.log(sheet.getRange(1,HeaderIndex.get(HeaderLabels.MTDHRS),1).getA1Notation());
+  let range = sheet.getRange(2,HeaderIndex.get(HeaderLabels.MTDHRS),sheet.getLastRow()); //get_range: row, col, number_rows
+  let formula = '=(('+Configs.DAYOFMONTH+'/'+Configs.DAYSINMONTH+')*168/24)';
+  range.setFormula(formula);
 }
 
 function setCorrectingfactor() {
@@ -447,4 +447,34 @@ function main() {
   Logger.log('entity set.');
   setCost();
   Logger.log('cost set.');
+}
+
+function aryna() {
+  /**
+   * Set header index
+   * Clear completed before start of 24
+   * Clear zero estimates
+   * Split shared tasks
+   * Format devs
+   * Set brand index
+   * Set brand entities
+   */
+  setHeaderIndex();
+  Logger.log('index set');
+  Configs.STARTDATE = new Date('January 01, 2024 01:00:00');
+  Logger.log(Configs.STARTDATE);
+  Configs.ENDDATE = new Date('December 31, 2024 01:00:00');
+  Logger.log(Configs.ENDDATE);
+  clearCompletedAt();
+  Logger.log('completed at');
+  clearZeroEst();
+  Logger.log('zero est');
+  separateSharedTasks();
+  Logger.log('shared');
+  formatDev();
+  Logger.log('format');
+  setBrandIndex(HeaderIndex.get(HeaderLabels.BRAND),'ETA');
+  Logger.log('ETA');
+  setBrandIndex(HeaderIndex.get(HeaderLabels.BRAND),'P529');
+  Logger.log('P');
 }
