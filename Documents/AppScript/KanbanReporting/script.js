@@ -1,5 +1,6 @@
 /* Actions, to do:
  * 1. Refactor main & foo's  to bounce 'sheet' from one to another
+ * 2. Re-work the search functions - binary / bubble sort / something faster
 */
 
 const dataSheet = 'Copy';
@@ -72,6 +73,7 @@ let HeaderIndex = new Map([
 ]);
 
 function setConfigs(isEndOfMonth) {  
+  isEndOfMonth = false;
   if(isEndOfMonth == true) {
     Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth(), 0).getDate(); /*EOM */
   } else {
@@ -80,7 +82,7 @@ function setConfigs(isEndOfMonth) {
   Logger.log(Configs.DAYSINMONTH);
 
   if(isEndOfMonth == true) {
-    Configs.STARTDATE = new Date(2024,8,1); /*EOM*/
+    Configs.STARTDATE = new Date(2024,9,1); /*EOM*/
   } else {
     Configs.STARTDATE.setDate(1);
   }
@@ -90,10 +92,14 @@ function setConfigs(isEndOfMonth) {
   Configs.ENDDATE.setMonth(Configs.STARTDATE.getMonth()+1);
   Configs.ENDDATE.setDate(0);
   Configs.ENDDATE.setHours(0,0,0,0);
-  Logger.log(Configs.ENDDATE);
+  Logger.log("End date " + Configs.ENDDATE);
 
-  Configs.DAYOFMONTH = new Date().getDate();
-  Logger.log(Configs.DAYOFMONTH);
+  if(isEndOfMonth == true) {
+    Configs.DAYOFMONTH = Configs.DAYSINMONTH;
+  } else {
+    Configs.DAYOFMONTH = new Date().getDate();
+  }
+  Logger.log("Day of month " + Configs.DAYOFMONTH);
 
   Configs.COSTFACTOR = 580*24; //Duration must be *24 to convert to int. This is done here.
 }
@@ -410,7 +416,7 @@ function main() {
    * Pass bool isEndOfMonth to setConfigs, which then determines the dates set.
    * I.e is it the previous month, or current month.
    */
-  const isEndOfMonth = false;
+  const isEndOfMonth = true;
 
   setConfigs(isEndOfMonth);
   Logger.log('configs set.');
