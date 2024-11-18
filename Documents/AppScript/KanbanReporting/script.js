@@ -73,7 +73,6 @@ let HeaderIndex = new Map([
 ]);
 
 function setConfigs(isEndOfMonth) {  
-  isEndOfMonth = false;
   if(isEndOfMonth == true) {
     Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth(), 0).getDate(); /*EOM */
   } else {
@@ -229,28 +228,17 @@ function clearZeroEst() {
 function separateSharedTasks() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   //Identify column indexes
-  //setHeaderIndex();
+  setHeaderIndex();
   let cellValue = '';
   for(let x = sheet.getLastRow(); x>0; x--) {
     cellValue = sheet.getRange(x,HeaderIndex.get(HeaderLabels.DEVELOPER)).getValue();
     if(cellValue.includes(',')) {
-      let splitDevs = cellValue.split(','); //Return the number of devs, not commas.
-      let estTimeTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.ESTTIME)).getValue();
-      let rollHrsTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.ROLLTIME)).getValue();
-      let brandTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.BRAND)).getValue();
-      let regionTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.REGION)).getValue();
-      let nameTemp = sheet.getRange(x, HeaderIndex.get(HeaderLabels.NAME)).getValue();
-      let techCatTemp = sheet.getRange(x, HeaderIndex.get(HeaderLabels.CATEGORY)).getValue();
-      
+      let splitDevs = cellValue.split(','); //Return the number of devs, not commas.      
       for(let y=0; y<cellValue.split(',').length-1; y++) {
         sheet.insertRowAfter(x);
+        //source_range.copy(target_range);
+        sheet.getRange(x,1,1,sheet.getLastColumn()).copyTo(sheet.getRange(x+1,1,1,sheet.getLastColumn()));
         sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(splitDevs[y+1]).trimWhitespace();
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.NAME)).setValue(nameTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.REGION)).setValue(regionTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.BRAND)).setValue(brandTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.ROLLTIME)).setValue(rollHrsTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.ESTTIME)).setValue(estTimeTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.CATEGORY)).setValue(techCatTemp);
       }
       sheet.getRange(x,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(splitDevs[0]);
     }
@@ -416,7 +404,7 @@ function main() {
    * Pass bool isEndOfMonth to setConfigs, which then determines the dates set.
    * I.e is it the previous month, or current month.
    */
-  const isEndOfMonth = true;
+  const isEndOfMonth = false;
 
   setConfigs(isEndOfMonth);
   Logger.log('configs set.');
