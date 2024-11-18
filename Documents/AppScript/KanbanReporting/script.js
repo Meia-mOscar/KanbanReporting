@@ -1,5 +1,6 @@
 /* Actions, to do:
  * 1. Refactor main & foo's  to bounce 'sheet' from one to another
+ * 2. Re-work the search functions - binary / bubble sort / something faster
 */
 
 const dataSheet = 'Copy';
@@ -80,7 +81,7 @@ function setConfigs(isEndOfMonth) {
   Logger.log(Configs.DAYSINMONTH);
 
   if(isEndOfMonth == true) {
-    Configs.STARTDATE = new Date(2024,8,1); /*EOM*/
+    Configs.STARTDATE = new Date(2024,9,1); /*EOM*/
   } else {
     Configs.STARTDATE.setDate(1);
   }
@@ -90,10 +91,14 @@ function setConfigs(isEndOfMonth) {
   Configs.ENDDATE.setMonth(Configs.STARTDATE.getMonth()+1);
   Configs.ENDDATE.setDate(0);
   Configs.ENDDATE.setHours(0,0,0,0);
-  Logger.log(Configs.ENDDATE);
+  Logger.log("End date " + Configs.ENDDATE);
 
-  Configs.DAYOFMONTH = new Date().getDate();
-  Logger.log(Configs.DAYOFMONTH);
+  if(isEndOfMonth == true) {
+    Configs.DAYOFMONTH = Configs.DAYSINMONTH;
+  } else {
+    Configs.DAYOFMONTH = new Date().getDate();
+  }
+  Logger.log("Day of month " + Configs.DAYOFMONTH);
 
   Configs.COSTFACTOR = 580*24; //Duration must be *24 to convert to int. This is done here.
 }
@@ -223,28 +228,17 @@ function clearZeroEst() {
 function separateSharedTasks() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   //Identify column indexes
-  //setHeaderIndex();
+  setHeaderIndex();
   let cellValue = '';
   for(let x = sheet.getLastRow(); x>0; x--) {
     cellValue = sheet.getRange(x,HeaderIndex.get(HeaderLabels.DEVELOPER)).getValue();
     if(cellValue.includes(',')) {
-      let splitDevs = cellValue.split(','); //Return the number of devs, not commas.
-      let estTimeTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.ESTTIME)).getValue();
-      let rollHrsTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.ROLLTIME)).getValue();
-      let brandTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.BRAND)).getValue();
-      let regionTemp = sheet.getRange(x,HeaderIndex.get(HeaderLabels.REGION)).getValue();
-      let nameTemp = sheet.getRange(x, HeaderIndex.get(HeaderLabels.NAME)).getValue();
-      let techCatTemp = sheet.getRange(x, HeaderIndex.get(HeaderLabels.CATEGORY)).getValue();
-      
+      let splitDevs = cellValue.split(','); //Return the number of devs, not commas.      
       for(let y=0; y<cellValue.split(',').length-1; y++) {
         sheet.insertRowAfter(x);
+        //source_range.copy(target_range);
+        sheet.getRange(x,1,1,sheet.getLastColumn()).copyTo(sheet.getRange(x+1,1,1,sheet.getLastColumn()));
         sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(splitDevs[y+1]).trimWhitespace();
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.NAME)).setValue(nameTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.REGION)).setValue(regionTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.BRAND)).setValue(brandTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.ROLLTIME)).setValue(rollHrsTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.ESTTIME)).setValue(estTimeTemp);
-        sheet.getRange(x+1,HeaderIndex.get(HeaderLabels.CATEGORY)).setValue(techCatTemp);
       }
       sheet.getRange(x,HeaderIndex.get(HeaderLabels.DEVELOPER)).setValue(splitDevs[0]);
     }
