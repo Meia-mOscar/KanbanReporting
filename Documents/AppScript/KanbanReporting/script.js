@@ -72,16 +72,21 @@ let HeaderIndex = new Map([
   [HeaderLabels.COST, -1]
 ]);
 
-function setConfigs(isEndOfMonth) {  
-  if(isEndOfMonth == true) {
+function setConfigs(maandEinde) {  
+  if(maandEinde){ 
+    Logger.log('true');
+  } else {
+    Logger.log('false');
+  }
+  if(maandEinde) {
     Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth(), 0).getDate(); /*EOM */
   } else {
     Configs.DAYSINMONTH = new Date(Configs.STARTDATE.getFullYear(), Configs.STARTDATE.getMonth()+1, 0).getDate();
   }
   Logger.log(Configs.DAYSINMONTH);
 
-  if(isEndOfMonth == true) {
-    Configs.STARTDATE = new Date(2024,9,1); /*EOM*/
+  if(maandEinde) {
+    Configs.STARTDATE = new Date(2024,10,1); /*EOM WHy are we hardcoding Oscar???*/
   } else {
     Configs.STARTDATE.setDate(1);
   }
@@ -93,7 +98,7 @@ function setConfigs(isEndOfMonth) {
   Configs.ENDDATE.setHours(0,0,0,0);
   Logger.log("End date " + Configs.ENDDATE);
 
-  if(isEndOfMonth == true) {
+  if(maandEinde) {
     Configs.DAYOFMONTH = Configs.DAYSINMONTH;
   } else {
     Configs.DAYOFMONTH = new Date().getDate();
@@ -391,20 +396,13 @@ function setEntity(brandIndex, entity) {
 
 }
 
-function setBrandIndex() {
-  /*
-   * No for a set enum.
-   * Brand to Region hardcoded in main().
-   */
-}
-
 function main() {
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(dataSheet);
   /**
    * Pass bool isEndOfMonth to setConfigs, which then determines the dates set.
    * I.e is it the previous month, or current month.
    */
-  const isEndOfMonth = false;
+  const isEndOfMonth = true;
 
   setConfigs(isEndOfMonth);
   Logger.log('configs set.');
